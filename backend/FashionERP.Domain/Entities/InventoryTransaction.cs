@@ -47,7 +47,6 @@ namespace FashionERP.Domain.Entities
         public string? Note { get; set; }
 
         [Required(ErrorMessage = "Người tạo giao dịch không được để trống")]
-        public Guid CreatedBy { get; set; }
         public virtual User Creator { get; set; } = null!;
     }
 }

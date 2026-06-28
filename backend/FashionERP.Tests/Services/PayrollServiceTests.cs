@@ -18,12 +18,9 @@ namespace FashionERP.Tests.Services
                 EmployeeId = Guid.NewGuid(),
                 Month = 6,
                 Year = 2026,
-                WorkingDaysActual = 22,
                 Allowance = 500_000,
-                OvertimePay = 200_000,
                 Deduction = 100_000
             };
-            // baseSalary 10M, 22/26 ngày công, + allowance + overtime - deduction
             mockService.Setup(s => s.GenerateAsync(request))
                 .ReturnsAsync(new PayrollResponseDto { NetSalary = 9_068_461 });
 

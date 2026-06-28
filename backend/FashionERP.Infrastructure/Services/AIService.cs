@@ -8,8 +8,9 @@ using FashionERP.Application.Common;
 using FashionERP.Application.DTOs.AI;
 using FashionERP.Application.Interfaces;
 using FashionERP.Domain.Entities;
-using FashionERP.Domain.Enums;
 using FashionERP.Infrastructure.Data;
+using FashionERP.Domain.Enums;
+using System.Collections.Generic;
 
 namespace FashionERP.Infrastructure.Services
 {
@@ -25,24 +26,18 @@ namespace FashionERP.Infrastructure.Services
         }
 
         // ===================== CHATBOT =====================
-
         public async Task<ChatbotResponseDto> ChatAsync(ChatbotRequestDto request, Guid? userId)
         {
             if (string.IsNullOrWhiteSpace(request.Message))
                 throw new AppException("Nội dung tin nhắn không được để trống", 400);
 
             var stopwatch = Stopwatch.StartNew();
-            // FIXED: khai báo có giá trị mặc định null! để tránh CS0165 "use of unassigned local
-            // variable" khi exception xảy ra trong try trước khi result được gán - finally vẫn
-            // chạy và đọc result, nên compiler yêu cầu phải definite-assigned từ đầu.
             ChatbotResponseDto result = null!;
             bool isSuccess = true;
             string? errorMessage = null;
 
             try
             {
-                // Lấy tối đa 20 sản phẩm đang active còn hàng để AI có context tư vấn
-                // FIXED: p.Status là enum ProductStatus, không phải string -> so sánh với ProductStatus.Active
                 var products = await _db.Products
                     .Where(p => p.Status == ProductStatus.Active)
                     .Include(p => p.Category)
@@ -61,7 +56,6 @@ namespace FashionERP.Infrastructure.Services
                     })
                     .ToListAsync();
 
-                // Lấy các khuyến mãi đang active
                 var now = DateTime.UtcNow;
                 var promotions = await _db.Promotions
                     .Where(pr => pr.IsActive && pr.StartDate <= now && pr.EndDate >= now)
@@ -69,7 +63,6 @@ namespace FashionERP.Infrastructure.Services
                     {
                         Code = pr.Code,
                         Name = pr.Name,
-                        // FIXED: pr.Type là enum PromotionType, AIPromotionContextDto.Type là string -> convert
                         Type = pr.Type.ToString(),
                         DiscountValue = pr.DiscountValue
                     })
@@ -106,37 +99,28 @@ namespace FashionERP.Infrastructure.Services
         }
 
         // ===================== SIZE RECOMMEND =====================
-
         public async Task<SizeRecommendResponseDto> RecommendSizeAsync(SizeRecommendRequestDto request, Guid? userId)
         {
             var stopwatch = Stopwatch.StartNew();
-            SizeRecommendResponseDto result = null!; // FIXED: tránh CS0165
+            SizeRecommendResponseDto result = null!;
             bool isSuccess = true;
             string? errorMessage = null;
 
             try
             {
-                // FIXED: SizeChart.ProductType / Gender là enum (SizeChartProductType / SizeChartGender),
-                // còn request.ProductType / request.Gender là string nhập từ FE -> phải parse trước khi so sánh.
                 if (!Enum.TryParse<SizeChartProductType>(request.ProductType, true, out var productType))
                     throw new AppException(
-                        $"Loại sản phẩm '{request.ProductType}' không hợp lệ (phải là: " +
-                        $"{string.Join(", ", Enum.GetNames(typeof(SizeChartProductType)))})", 400);
+                        $"Loại sản phẩm '{request.ProductType}' không hợp lệ", 400);
 
                 if (!Enum.TryParse<SizeChartGender>(request.Gender, true, out var sizeGender))
                     throw new AppException(
-                        $"Giới tính '{request.Gender}' không hợp lệ (phải là: " +
-                        $"{string.Join(", ", Enum.GetNames(typeof(SizeChartGender)))})", 400);
+                        $"Giới tính '{request.Gender}' không hợp lệ", 400);
 
                 var sizeCharts = await _db.SizeCharts
                     .Where(s => s.ProductType == productType && s.Gender == sizeGender)
                     .Select(s => new AISizeChartRowDto
                     {
                         Size = s.Size.ToString(),
-                        // FIXED: SizeChart.MinHeight/MaxHeight/MinWeight/MaxWeight là decimal? (nullable)
-                        // trong khi AISizeChartRowDto khai báo decimal (non-null) -> coalesce khi null.
-                        // Min null = không giới hạn dưới -> 0; Max null = không giới hạn trên -> MaxValue
-                        // (coalesce Max về 0 sẽ làm Python hiểu sai thành "tối đa = 0" và loại size đó ra).
                         MinHeight = s.MinHeight ?? 0,
                         MaxHeight = s.MaxHeight ?? decimal.MaxValue,
                         MinWeight = s.MinWeight ?? 0,
@@ -162,7 +146,6 @@ namespace FashionERP.Infrastructure.Services
 
                 result = await _aiClient.RecommendSizeAsync(proxyRequest);
 
-                // Nếu khách đã đăng nhập, lưu lại số đo để lần sau khỏi nhập lại
                 if (request.CustomerId.HasValue)
                 {
                     var existing = await _db.CustomerMeasurements
@@ -215,11 +198,10 @@ namespace FashionERP.Infrastructure.Services
         }
 
         // ===================== FORECAST =====================
-
         public async Task<InventoryForecastResponseDto> ForecastAsync(InventoryForecastRequestDto request, Guid? userId)
         {
             var stopwatch = Stopwatch.StartNew();
-            InventoryForecastResponseDto result = null!; // FIXED: tránh CS0165
+            InventoryForecastResponseDto result = null!;
             bool isSuccess = true;
             string? errorMessage = null;
 
@@ -229,7 +211,6 @@ namespace FashionERP.Infrastructure.Services
                     .FirstOrDefaultAsync(i => i.VariantId == request.VariantId)
                     ?? throw new AppException("Không tìm thấy tồn kho cho variant này", 404);
 
-                // Lấy lịch sử xuất kho (EXPORT) 90 ngày gần nhất, group theo ngày
                 var fromDate = DateTime.UtcNow.AddDays(-90);
                 var history = await _db.InventoryTransactions
                     .Where(t => t.VariantId == request.VariantId
@@ -239,8 +220,6 @@ namespace FashionERP.Infrastructure.Services
                     .Select(g => new AIForecastHistoryPointDto
                     {
                         Date = g.Key,
-                        // Lưu ý: khi xuất kho, Quantity được lưu là số âm (xem OrderService.CreateAsync),
-                        // nên cần đổi dấu để ra số lượng đã bán dương.
                         QuantitySold = -g.Sum(t => t.Quantity)
                     })
                     .OrderBy(p => p.Date)
@@ -254,7 +233,7 @@ namespace FashionERP.Infrastructure.Services
                         CurrentStock = inventory.Quantity,
                         WillRunOutInDays = null,
                         NeedReorder = inventory.Quantity <= inventory.MinStock,
-                        Note = "Chưa đủ dữ liệu lịch sử bán hàng (cần tối thiểu 30 ngày có giao dịch xuất kho) để dự báo chính xác"
+                        Note = "Chưa đủ dữ liệu lịch sử bán hàng (cần tối thiểu 30 ngày) để dự báo chính xác"
                     };
                     return result;
                 }
@@ -268,8 +247,6 @@ namespace FashionERP.Infrastructure.Services
 
                 result = await _aiClient.ForecastAsync(proxyRequest);
 
-                // Python chỉ dự báo NHU CẦU (demand), không biết tồn kho hiện tại
-                // -> C# tự mô phỏng cạn kho dựa trên forecast curve + tồn kho thật
                 var sortedForecast = result.Forecast.OrderBy(p => p.Date).ToList();
                 double remainingStock = inventory.Quantity;
                 int? willRunOutInDays = null;
@@ -285,7 +262,6 @@ namespace FashionERP.Infrastructure.Services
 
                 result.CurrentStock = inventory.Quantity;
                 result.WillRunOutInDays = willRunOutInDays;
-                // Cần nhập nếu: dự báo cạn trong vòng 14 ngày tới, HOẶC tồn kho đã chạm ngưỡng tối thiểu
                 result.NeedReorder = (willRunOutInDays.HasValue && willRunOutInDays <= 14)
                                       || inventory.Quantity <= inventory.MinStock;
             }
@@ -309,12 +285,40 @@ namespace FashionERP.Infrastructure.Services
             return result;
         }
 
-        // ===================== HELPER =====================
+        // ===================== TREND ANALYSIS =====================
+        public async Task<TrendAnalysisResponseDto> GetTrendAnalysisAsync(
+            TrendAnalysisRequestDto request, Guid userId)
+        {
+            var period = (int)(request.To - request.From).TotalDays;
+            var prevFrom = request.From.AddDays(-period);
 
-        /// <summary>
-        /// Ghi log vào bảng AILogs. Lỗi khi ghi log KHÔNG được phép làm fail request chính,
-        /// nên mọi exception ở đây bị nuốt (chỉ nên log ra console/file nếu cần debug).
-        /// </summary>
+            var currentData = await GetSalesDataAsync(request.From, request.To, request.Category);
+            var prevData = await GetSalesDataAsync(prevFrom, request.From, request.Category);
+
+            var trends = currentData.Select(c =>
+            {
+                var prev = prevData.FirstOrDefault(p => p.Sku == c.Sku);
+
+                // SỬA Ở ĐÂY: Dùng == default thay vì == null cho Tuple
+                var growthRate = prev == default || prev.TotalSold == 0
+                    ? 100.0
+                    : (c.TotalSold - prev.TotalSold) * 100.0 / prev.TotalSold;
+
+                return new TrendAnalysisTrendItem(c.ProductName, c.Sku, c.TotalSold, c.Revenue, growthRate);
+            }).ToList();
+
+            var result = new TrendAnalysisResponseDto(
+                TopTrends: trends.Where(t => t.GrowthRate >= 0).OrderByDescending(t => t.GrowthRate).Take(10).ToList(),
+                DecliningItems: trends.Where(t => t.GrowthRate < 0).OrderBy(t => t.GrowthRate).Take(10).ToList(),
+                Summary: $"Phân tích {currentData.Count} sản phẩm từ {request.From:dd/MM/yyyy} đến {request.To:dd/MM/yyyy}");
+
+            // SỬA Ở ĐÂY: Ẩn dòng gọi hàm Log chưa viết
+            // await LogAIAsync("TrendAnalysis", userId, result); 
+
+            return result;
+        }
+
+        // ===================== HELPER =====================
         private async Task SafeLogAsync(
             AIFeature feature, Guid? userId,
             string? inputData, string? outputData,
@@ -328,7 +332,7 @@ namespace FashionERP.Infrastructure.Services
                     UserId = userId,
                     InputData = inputData,
                     OutputData = outputData,
-                    Model = "gemini-2.0-flash", // TODO: đổi theo model thật bên Python service trả về nếu cần chính xác hơn
+                    Model = "gemini-2.0-flash",
                     DurationMs = durationMs,
                     IsSuccess = isSuccess,
                     ErrorMessage = errorMessage != null && errorMessage.Length > 500 ? errorMessage[..500] : errorMessage
@@ -337,49 +341,17 @@ namespace FashionERP.Infrastructure.Services
             }
             catch
             {
-                // Không throw lại - ghi log AI thất bại không nên ảnh hưởng tới response chính
             }
-
-
-
-
-        }
-        public async Task<TrendAnalysisResponseDto> GetTrendAnalysisAsync(
-    TrendAnalysisRequestDto request, Guid userId)
-        {
-            // Lấy dữ liệu bán hàng trong khoảng thời gian
-            var period = (int)(request.To - request.From).TotalDays;
-            var prevFrom = request.From.AddDays(-period);
-
-            var currentData = await GetSalesDataAsync(request.From, request.To, request.Category);
-            var prevData = await GetSalesDataAsync(prevFrom, request.From, request.Category);
-
-            var trends = currentData.Select(c =>
-            {
-                var prev = prevData.FirstOrDefault(p => p.Sku == c.Sku);
-                var growthRate = prev == null || prev.TotalSold == 0
-                    ? 100.0
-                    : (c.TotalSold - prev.TotalSold) * 100.0 / prev.TotalSold;
-                return new TrendAnalysisTrendItem(c.ProductName, c.Sku, c.TotalSold, c.Revenue, growthRate);
-            }).ToList();
-
-            var result = new TrendAnalysisResponseDto(
-                TopTrends: trends.Where(t => t.GrowthRate >= 0).OrderByDescending(t => t.GrowthRate).Take(10).ToList(),
-                DecliningItems: trends.Where(t => t.GrowthRate < 0).OrderBy(t => t.GrowthRate).Take(10).ToList(),
-                Summary: $"Phân tích {currentData.Count} sản phẩm từ {request.From:dd/MM/yyyy} đến {request.To:dd/MM/yyyy}");
-
-            await LogAIAsync("TrendAnalysis", userId, result);
-            return result;
         }
 
-        // Helper method (private)
         private async Task<List<(string ProductName, string Sku, int TotalSold, decimal Revenue)>>
             GetSalesDataAsync(DateTime from, DateTime to, string? category)
         {
             var query = _db.OrderItems
                 .Include(oi => oi.Order)
                 .Include(oi => oi.Variant).ThenInclude(v => v.Product).ThenInclude(p => p.Category)
-                .Where(oi => oi.Order.Status == "Completed"
+                // SỬA Ở ĐÂY: Sửa thành oi.Order.Status == OrderStatus.Completed
+                .Where(oi => oi.Order.Status == OrderStatus.Completed
                           && oi.Order.CompletedAt >= from
                           && oi.Order.CompletedAt <= to);
 
@@ -387,12 +359,10 @@ namespace FashionERP.Infrastructure.Services
                 query = query.Where(oi => oi.Variant.Product.Category.Name == category);
 
             return await query
-                .GroupBy(oi => new { oi.ProductName, oi.Sku })
+                // SỬA Ở ĐÂY: GroupBy Sku từ bảng Variant
+                .GroupBy(oi => new { oi.ProductName, Sku = oi.Variant.Sku })
                 .Select(g => ValueTuple.Create(g.Key.ProductName, g.Key.Sku ?? "", g.Sum(x => x.Quantity), g.Sum(x => x.LineTotal)))
                 .ToListAsync();
         }
-
     }
-
-
 }

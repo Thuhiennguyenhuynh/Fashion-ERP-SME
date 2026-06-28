@@ -17,14 +17,17 @@ namespace FashionERP.API.Controllers
             _orderService = orderService;
         }
 
-        /// <summary>Danh sách đơn hàng (lọc theo status, ngày)</summary>
+        /// <summary>Danh sách đơn hàng — filter + phân trang</summary>
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? status,
             [FromQuery] DateTime? from,
-            [FromQuery] DateTime? to)
+            [FromQuery] DateTime? to,
+            [FromQuery] Guid? staffId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
-            var result = await _orderService.GetAllAsync(status, from, to);
+            var result = await _orderService.GetAllAsync(status, from, to, staffId, page, pageSize);
             return Ok(result);
         }
 
@@ -41,7 +44,6 @@ namespace FashionERP.API.Controllers
         [Authorize(Roles = "Admin,Manager,Sales")]
         public async Task<IActionResult> Create([FromBody] CreateOrderRequestDto request)
         {
-            // staffId lấy từ EmployeeId trong JWT
             var staffId = CurrentEmployeeId
                 ?? throw new Application.Common.BusinessException(
                     "Tài khoản này chưa được liên kết với nhân viên, không thể tạo đơn hàng");
@@ -74,24 +76,9 @@ namespace FashionERP.API.Controllers
         public async Task<IActionResult> CreateReturn(
             Guid id, [FromBody] CreateReturnRequestDto request)
         {
-            //request = request with { OrderId = id };
             request.OrderId = id;
             var result = await _orderService.CreateReturnAsync(request, CurrentUserId);
             return Created(result, "Tạo phiếu đổi trả thành công");
         }
-        /// <summary>Danh sách đơn hàng — filter + phân trang</summary>
-        [HttpGet]
-        public async Task<IActionResult> GetAll(
-            [FromQuery] string? status,
-            [FromQuery] DateTime? from,
-            [FromQuery] DateTime? to,
-            [FromQuery] Guid? staffId,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            var result = await _orderService.GetAllAsync(status, from, to, staffId, page, pageSize);
-            return Ok(result);
-        }
     }
 }
-

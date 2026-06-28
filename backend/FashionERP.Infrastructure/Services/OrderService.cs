@@ -31,25 +31,6 @@ namespace FashionERP.Infrastructure.Services
                 .Include(o => o.Items)
                 .Include(o => o.Promotion);
 
-        // ─── GET ALL ──────────────────────────────────────────
-        public async Task<List<OrderResponseDto>> GetAllAsync(
-            string? status, DateTime? from, DateTime? to)
-        {
-            var query = BaseQuery();
-
-            if (!string.IsNullOrEmpty(status) && Enum.TryParse<OrderStatus>(status, out var st))
-                query = query.Where(o => o.Status == st);
-
-            if (from.HasValue)
-                query = query.Where(o => o.CreatedAt >= from.Value);
-
-            if (to.HasValue)
-                query = query.Where(o => o.CreatedAt <= to.Value.AddDays(1));
-
-            var list = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
-            return _mapper.Map<List<OrderResponseDto>>(list);
-        }
-
         // ─── GET BY ID ────────────────────────────────────────
         public async Task<OrderResponseDto> GetByIdAsync(Guid id)
         {
@@ -61,20 +42,16 @@ namespace FashionERP.Infrastructure.Services
         // ─── CREATE ORDER ─────────────────────────────────────
         public async Task<OrderResponseDto> CreateAsync(CreateOrderRequestDto request, Guid staffId)
         {
-            // Validate nhân viên
             if (!await _db.Employees.AnyAsync(e => e.Id == staffId))
                 throw new NotFoundException("Nhân viên", staffId);
 
-            // Validate khách hàng (nếu có)
             if (request.CustomerId.HasValue &&
                 !await _db.Customers.AnyAsync(c => c.Id == request.CustomerId.Value))
                 throw new NotFoundException("Khách hàng", request.CustomerId.Value);
 
-            // Validate payment method
             if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, out var payMethod))
                 throw new AppException("Phương thức thanh toán không hợp lệ");
 
-            // Sinh mã đơn hàng: ORD-YYYYMMDD-XXX
             var today = DateTime.UtcNow;
             var dateStr = today.ToString("yyyyMMdd");
             var countToday = await _db.Orders
@@ -87,7 +64,6 @@ namespace FashionERP.Infrastructure.Services
                 decimal subtotal = 0;
                 var orderItems = new List<OrderItem>();
 
-                // Xử lý từng dòng sản phẩm
                 foreach (var item in request.Items)
                 {
                     var variant = await _db.ProductVariants
@@ -111,15 +87,14 @@ namespace FashionERP.Infrastructure.Services
                     orderItems.Add(new OrderItem
                     {
                         VariantId = item.VariantId,
-                        ProductName = variant.Product.Name,    // SNAPSHOT
-                        Size = variant.Size.ToString(),        // SNAPSHOT
-                        Color = variant.Color,                 // SNAPSHOT
-                        UnitPrice = unitPrice,                 // SNAPSHOT
+                        ProductName = variant.Product.Name,
+                        Size = variant.Size.ToString(),
+                        Color = variant.Color,
+                        UnitPrice = unitPrice,
                         Quantity = item.Quantity,
                         LineTotal = lineTotal
                     });
 
-                    // Trừ tồn kho ngay
                     var qBefore = variant.Inventory.Quantity;
                     variant.Inventory.Quantity -= item.Quantity;
                     variant.Inventory.UpdatedAt = DateTime.UtcNow;
@@ -137,7 +112,6 @@ namespace FashionERP.Infrastructure.Services
                     });
                 }
 
-                // Áp dụng khuyến mãi
                 decimal discountAmount = 0;
                 Guid? promotionId = null;
                 string? promotionCodeSnapshot = null;
@@ -171,7 +145,6 @@ namespace FashionERP.Infrastructure.Services
                     promotionCodeSnapshot = promo.Code;
                 }
 
-                // Thuế VAT 10% (có thể cấu hình)
                 const decimal vatRate = 0.10m;
                 var taxAmount = (subtotal - discountAmount) * vatRate;
                 var finalAmount = subtotal - discountAmount + taxAmount;
@@ -194,7 +167,7 @@ namespace FashionERP.Infrastructure.Services
                 };
 
                 _db.Orders.Add(order);
-                await _db.SaveChangesAsync(); // Lấy order.Id trước khi add items
+                await _db.SaveChangesAsync();
 
                 foreach (var item in orderItems)
                 {
@@ -202,7 +175,6 @@ namespace FashionERP.Infrastructure.Services
                     _db.OrderItems.Add(item);
                 }
 
-                // Cập nhật thống kê khách hàng
                 if (request.CustomerId.HasValue)
                 {
                     var customer = await _db.Customers.FindAsync(request.CustomerId.Value);
@@ -238,16 +210,12 @@ namespace FashionERP.Infrastructure.Services
             if (order.Status == OrderStatus.Cancelled)
                 throw new BusinessException("Đơn hàng này đã được hủy trước đó");
 
-            // CHANGED: trước đây chỉ chặn khi Status == Returned.
-            // Giờ Returned/PartiallyReturned đều có nghĩa là đơn đã có hàng được trả lại,
-            // không cho hủy nữa trong cả 2 trường hợp.
             if (order.Status == OrderStatus.Returned || order.Status == OrderStatus.PartiallyReturned)
                 throw new BusinessException("Không thể hủy đơn hàng đã đổi trả (toàn bộ hoặc một phần)");
 
             await using var tx = await _db.Database.BeginTransactionAsync();
             try
             {
-                // Hoàn tồn kho
                 foreach (var item in order.Items)
                 {
                     var inv = await _db.Inventories
@@ -273,7 +241,6 @@ namespace FashionERP.Infrastructure.Services
                     }
                 }
 
-                // Hoàn thống kê khách hàng
                 if (order.CustomerId.HasValue)
                 {
                     var customer = await _db.Customers.FindAsync(order.CustomerId.Value);
@@ -286,7 +253,6 @@ namespace FashionERP.Infrastructure.Services
                     }
                 }
 
-                // Hoàn lượt dùng khuyến mãi
                 if (order.PromotionId.HasValue)
                 {
                     var promo = await _db.Promotions.FindAsync(order.PromotionId.Value);
@@ -326,10 +292,6 @@ namespace FashionERP.Infrastructure.Services
         }
 
         // ─── CREATE RETURN ────────────────────────────────────
-        // CHANGED: trước đây luôn set order.Status = Returned dù chỉ trả 1 variant trong đơn nhiều món.
-        // Giờ tính tổng đã trả trên TẤT CẢ variant của đơn so với tổng đã mua:
-        //   - Trả hết toàn bộ các dòng hàng  → Status = Returned
-        //   - Trả một phần (còn dòng/số lượng chưa trả) → Status = PartiallyReturned
         public async Task<OrderResponseDto> CreateReturnAsync(
             CreateReturnRequestDto request, Guid createdBy)
         {
@@ -338,12 +300,9 @@ namespace FashionERP.Infrastructure.Services
                 .FirstOrDefaultAsync(o => o.Id == request.OrderId)
                 ?? throw new NotFoundException("Đơn hàng", request.OrderId);
 
-            // CHANGED: cho phép tạo thêm phiếu trả khi đơn đang Completed HOẶC đã PartiallyReturned
-            // (trước đây chỉ chấp nhận Completed, nên không trả tiếp được lần 2 sau khi có Status khác Completed)
             if (order.Status != OrderStatus.Completed && order.Status != OrderStatus.PartiallyReturned)
                 throw new BusinessException("Chỉ có thể đổi trả đơn hàng đã hoàn thành (hoặc đang trả một phần)");
 
-            // Kiểm tra số lượng trả không vượt quá số lượng mua
             var orderItem = order.Items.FirstOrDefault(i => i.VariantId == request.VariantId)
                 ?? throw new BusinessException("Sản phẩm này không có trong đơn hàng cần đổi trả");
 
@@ -375,7 +334,6 @@ namespace FashionERP.Infrastructure.Services
                 };
                 _db.Returns.Add(ret);
 
-                // Hoàn tồn kho khi trả hàng
                 var inv = await _db.Inventories
                     .FirstOrDefaultAsync(i => i.VariantId == request.VariantId);
                 if (inv != null)
@@ -398,14 +356,9 @@ namespace FashionERP.Infrastructure.Services
                     });
                 }
 
-                // NEW: tính lại tổng số lượng đã trả của TOÀN ĐƠN (gồm cả phiếu vừa tạo)
-                // sau khi SaveChanges để query _db.Returns thấy được bản ghi vừa Add (EF Core
-                // tracking vẫn cho phép query lại nhờ AsTracking + đã add vào context, nhưng để
-                // chắc chắn và rõ ràng ta cộng thủ công bản ghi vừa tạo vào kết quả sum cũ).
                 await _db.SaveChangesAsync();
 
                 var totalOrderedQuantity = order.Items.Sum(i => i.Quantity);
-
                 var totalReturnedQuantity = await _db.Returns
                     .Where(r => r.OrderId == order.Id)
                     .SumAsync(r => r.Quantity);
@@ -427,18 +380,19 @@ namespace FashionERP.Infrastructure.Services
             }
         }
 
-
+        // ─── GET ALL (PAGED) ──────────────────────────────────
         public async Task<PagedResult<OrderResponseDto>> GetAllAsync(
-    string? status, DateTime? from, DateTime? to,
-    Guid? staffId, int page, int pageSize)
+            string? status, DateTime? from, DateTime? to,
+            Guid? staffId, int page, int pageSize)
         {
             var query = _db.Orders
                 .Include(o => o.Customer)
                 .Include(o => o.Items)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(status))
-                query = query.Where(o => o.Status == status);
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<OrderStatus>(status, out var parsedStatus))
+                query = query.Where(o => o.Status == parsedStatus);
+
             if (from.HasValue)
                 query = query.Where(o => o.CreatedAt >= from.Value);
             if (to.HasValue)
@@ -454,7 +408,13 @@ namespace FashionERP.Infrastructure.Services
                 .Select(o => _mapper.Map<OrderResponseDto>(o))
                 .ToListAsync();
 
-            return new PagedResult<OrderResponseDto>(items, total, page, pageSize);
+            return new PagedResult<OrderResponseDto>
+            {
+                Items = items,
+                TotalCount = total,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

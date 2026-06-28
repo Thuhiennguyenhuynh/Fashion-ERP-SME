@@ -28,19 +28,6 @@ namespace FashionERP.Infrastructure.Services
             _db.Inventories
                 .Include(i => i.Variant).ThenInclude(v => v.Product);
 
-        // ─── GET ALL ──────────────────────────────────────────
-        public async Task<List<InventoryResponseDto>> GetAllAsync(bool? lowStockOnly)
-        {
-            var query = BaseQuery();
-            if (lowStockOnly == true)
-                query = query.Where(i => i.Quantity <= i.MinStock);
-
-            var list = await query
-                .OrderBy(i => i.Variant.Product.Name)
-                .ToListAsync();
-            return _mapper.Map<List<InventoryResponseDto>>(list);
-        }
-
         // ─── GET BY VARIANT ───────────────────────────────────
         public async Task<InventoryResponseDto> GetByVariantIdAsync(Guid variantId)
         {
@@ -62,7 +49,6 @@ namespace FashionERP.Infrastructure.Services
                 var qBefore = inv.Quantity;
                 inv.Quantity += request.Quantity;
 
-                // Cập nhật giá vốn trung bình (Weighted Average Cost)
                 if (request.UnitCost > 0)
                 {
                     var totalValue = (inv.AvgCost * qBefore) + (request.UnitCost * request.Quantity);
@@ -72,7 +58,6 @@ namespace FashionERP.Infrastructure.Services
                 inv.LastImportDate = DateTime.UtcNow;
                 inv.UpdatedAt = DateTime.UtcNow;
 
-                // Ghi log giao dịch kho
                 var txRecord = new InventoryTransaction
                 {
                     VariantId = request.VariantId,
@@ -120,7 +105,7 @@ namespace FashionERP.Infrastructure.Services
                 {
                     VariantId = request.VariantId,
                     Type = InventoryTransactionType.ADJUST,
-                    Quantity = diff, // dương = thêm, âm = bớt
+                    Quantity = diff,
                     RefType = "Stocktake",
                     QuantityBefore = qBefore,
                     QuantityAfter = request.NewQuantity,
@@ -138,9 +123,11 @@ namespace FashionERP.Infrastructure.Services
                 throw;
             }
         }
+
+        // ─── GET ALL (PAGED) ──────────────────────────────────
         public async Task<PagedResult<InventoryResponseDto>> GetAllAsync(
-    bool? lowStockOnly, Guid? productId, string? keyword,
-    int page, int pageSize)
+            bool? lowStockOnly, Guid? productId, string? keyword,
+            int page, int pageSize)
         {
             var query = _db.Inventories
                 .Include(i => i.Variant)
@@ -164,7 +151,13 @@ namespace FashionERP.Infrastructure.Services
                 .Select(i => _mapper.Map<InventoryResponseDto>(i))
                 .ToListAsync();
 
-            return new PagedResult<InventoryResponseDto>(items, total, page, pageSize);
+            return new PagedResult<InventoryResponseDto>
+            {
+                Items = items,
+                TotalCount = total,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

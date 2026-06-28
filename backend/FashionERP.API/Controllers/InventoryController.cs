@@ -24,9 +24,14 @@ namespace FashionERP.API.Controllers
         /// <summary>Xem tồn kho tất cả biến thể (có thể lọc hàng sắp hết)</summary>
         [HttpGet]
         [Authorize(Roles = "Admin,Manager,Warehouse")]
-        public async Task<IActionResult> GetAll([FromQuery] bool? lowStockOnly)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] bool? lowStockOnly,
+            [FromQuery] Guid? productId,
+            [FromQuery] string? keyword,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
-            var result = await _inventoryService.GetAllAsync(lowStockOnly);
+            var result = await _inventoryService.GetAllAsync(lowStockOnly, productId, keyword, page, pageSize);
             return Ok(result);
         }
 
@@ -109,18 +114,7 @@ namespace FashionERP.API.Controllers
 
             return Ok(new { total, page, pageSize, items });
         }
-        [HttpGet]
-[Authorize(Roles = "Admin,Manager,Warehouse")]
-public async Task<IActionResult> GetAll(
-    [FromQuery] bool? lowStockOnly,
-    [FromQuery] Guid? productId,
-    [FromQuery] string? keyword,
-    [FromQuery] int page = 1,
-    [FromQuery] int pageSize = 20)
-{
-    var result = await _inventoryService.GetAllAsync(lowStockOnly, productId, keyword, page, pageSize);
-    return Ok(result);
-}
+
         /// <summary>Lịch sử giao dịch kho theo variantId</summary>
         [HttpGet("transactions/{variantId:guid}")]
         [Authorize(Roles = "Admin,Manager,Warehouse")]

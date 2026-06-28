@@ -15,9 +15,7 @@
     using FluentAssertions;
     using Moq;
     using Xunit;
-
-    // NOTE: cần thêm package Moq vào FashionERP.Tests.csproj nếu chưa có:
-    //   dotnet add FashionERP.Tests package Moq
+    using Microsoft.AspNetCore.Http;
 
     public class AIServiceTests : IDisposable
     {
@@ -35,16 +33,15 @@
             var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseSqlite(connection)
                 .Options;
-            _db = new AppDbContext(options);
+
+            // Mock HttpContextAccessor
+            var mockHttp = new Mock<IHttpContextAccessor>();
+            _db = new AppDbContext(options, mockHttp.Object);
             _db.Database.EnsureCreated();
 
             _aiClientMock = new Mock<IAIServiceClient>();
             _service = new AIService(_db, _aiClientMock.Object);
 
-            // Seed: 1 size chart cho Shirt/Male, 1 variant + inventory
-            // FIXED: SizeChart.ProductType/Gender/Size là enum (SizeChartProductType/SizeChartGender/
-            // SizeChartSize), không phải string -> dùng đúng tên enum khớp với AIService.RecommendSizeAsync
-            // (vốn parse request.ProductType/Gender bằng Enum.TryParse<SizeChartProductType/Gender>).
             _db.SizeCharts.Add(new SizeChart
             {
                 Id = Guid.NewGuid(),
@@ -125,7 +122,7 @@
         {
             var act = async () => await _service.RecommendSizeAsync(new SizeRecommendRequestDto
             {
-                ProductType = "Pants", // không seed loại này -> Enum.TryParse hợp lệ nhưng SizeCharts.Count == 0
+                ProductType = "Pants",
                 Gender = "Female",
                 Height = 165,
                 Weight = 55
@@ -195,7 +192,6 @@
         [Fact(DisplayName = "Forecast: đủ dữ liệu lịch sử → gọi AI client và trả kết quả dự báo")]
         public async Task ForecastAsync_EnoughHistory_CallsAIClient()
         {
-            // Seed 30 ngày giao dịch EXPORT để đủ điều kiện (>= 30)
             for (int i = 0; i < 30; i++)
             {
                 _db.InventoryTransactions.Add(new InventoryTransaction
@@ -220,7 +216,7 @@
             .Select(i => new InventoryForecastPointDto
             {
                 Date = DateTime.UtcNow.Date.AddDays(i),
-                PredictedQuantitySold = 4 // 20 tồn kho / 4 mỗi ngày = cạn sau 5 ngày
+                PredictedQuantitySold = 4
             })
             .ToList()
     });
@@ -232,7 +228,7 @@
             }, _userId);
 
             result.WillRunOutInDays.Should().Be(5);
-            result.NeedReorder.Should().BeTrue(); // vì 5 <= 14 ngày
+            result.NeedReorder.Should().BeTrue();
             result.CurrentStock.Should().Be(20);
 
             _aiClientMock.Verify(

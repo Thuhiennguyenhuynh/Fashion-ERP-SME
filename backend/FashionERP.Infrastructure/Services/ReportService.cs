@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using FashionERP.Application.Interfaces;
 using FashionERP.Infrastructure.Data;
+using FashionERP.Domain.Enums;
 
 namespace FashionERP.Infrastructure.Services
 {
@@ -19,7 +20,7 @@ namespace FashionERP.Infrastructure.Services
             DateTime from, DateTime to, string groupBy)
         {
             var orders = await _db.Orders
-                .Where(o => o.Status == "Completed"
+                .Where(o => o.Status == OrderStatus.Completed
                          && o.CompletedAt >= from
                          && o.CompletedAt <= to)
                 .Select(o => new { o.CompletedAt, o.FinalAmount })
@@ -47,10 +48,12 @@ namespace FashionERP.Infrastructure.Services
         {
             return await _db.OrderItems
                 .Include(oi => oi.Order)
-                .Where(oi => oi.Order.Status == "Completed"
+                .Include(oi => oi.Variant) // SỬA: Bổ sung Include Variant để lấy mã SKU
+                .Where(oi => oi.Order.Status == OrderStatus.Completed
                           && oi.Order.CompletedAt >= from
                           && oi.Order.CompletedAt <= to)
-                .GroupBy(oi => new { oi.ProductName, oi.Sku })
+                // SỬA: Gọi Sku thông qua Variant
+                .GroupBy(oi => new { oi.ProductName, Sku = oi.Variant.Sku })
                 .Select(g => new TopProductItem(
                     g.Key.ProductName,
                     g.Key.Sku ?? "",

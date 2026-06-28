@@ -13,6 +13,8 @@
     using FashionERP.Infrastructure.Services;
     using FluentAssertions;
     using Xunit;
+    using Moq;
+    using Microsoft.AspNetCore.Http;
 
     public class InventoryServiceTests : IDisposable
     {
@@ -23,20 +25,20 @@
 
         public InventoryServiceTests()
         {
-            // SQLite InMemory để hỗ trợ Transaction (EF Core InMemory provider KHÔNG hỗ trợ transaction)
             var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
             connection.Open();
             var options = new DbContextOptionsBuilder<AppDbContext>()
                 .UseSqlite(connection)
                 .Options;
-            _db = new AppDbContext(options);
+
+            var mockHttp = new Mock<IHttpContextAccessor>();
+            _db = new AppDbContext(options, mockHttp.Object);
             _db.Database.EnsureCreated();
 
             var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>());
             var mapper = config.CreateMapper();
             _service = new InventoryService(_db, mapper);
 
-            // Seed category/brand/product/variant/inventory tối thiểu
             var catId = Guid.NewGuid();
             _db.Categories.Add(new Category { Id = catId, Name = "Áo", Slug = "ao" });
             var prodId = Guid.NewGuid();
@@ -76,7 +78,6 @@
 
             var inv = await _db.Inventories.FirstAsync(i => i.VariantId == _variantId);
             inv.Quantity.Should().Be(20);
-            // AvgCost = (50000*10 + 70000*10) / 20 = 60000
             inv.AvgCost.Should().Be(60_000);
         }
 
@@ -105,7 +106,7 @@
             var act = async () => await _service.AdjustStockAsync(new AdjustStockRequestDto
             {
                 VariantId = _variantId,
-                NewQuantity = 10 // bằng số lượng hiện tại
+                NewQuantity = 10
             }, _userId);
 
             await act.Should().ThrowAsync<BusinessException>();
@@ -127,5 +128,3 @@
         public void Dispose() => _db.Dispose();
     }
 }
-
-

@@ -4,12 +4,22 @@ using FashionERP.Domain.Entities;
 using FashionERP.Domain.Enums;
 using FashionERP.Domain.Common;
 
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+
 namespace FashionERP.Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
+        public AppDbContext(
+            DbContextOptions<AppDbContext> options,
+            IHttpContextAccessor httpContextAccessor
+        ) : base(options)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
         // ===== Auth & HR =====
         public DbSet<User> Users => Set<User>();
         public DbSet<Department> Departments => Set<Department>();
@@ -599,17 +609,44 @@ namespace FashionERP.Infrastructure.Data
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            foreach (var entry in ChangeTracker.Entries<ISoftDeletable>())
+            var now = DateTime.UtcNow;
+
+            // Lấy UserId từ JWT
+            var userIdString = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid? userId = null;
+
+            if (!string.IsNullOrEmpty(userIdString) && Guid.TryParse(userIdString, out var parsedId))
             {
-                if (entry.State == EntityState.Deleted)
+                userId = parsedId;
+            }
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                // ===== AUDIT =====
+                if (entry.Entity is BaseEntity entity)
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        entity.CreatedAt = now;
+                        entity.CreatedBy = userId;
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        entity.UpdatedAt = now;
+                        entity.UpdatedBy = userId;
+                    }
+                }
+
+                // ===== SOFT DELETE =====
+                if (entry.State == EntityState.Deleted && entry.Entity is ISoftDeletable soft)
                 {
                     entry.State = EntityState.Modified;
-                    entry.Entity.IsDeleted = true;
-                    entry.Entity.DeletedAt = DateTime.UtcNow;
+                    soft.IsDeleted = true;
+                    soft.DeletedAt = now;
                 }
             }
+
             return await base.SaveChangesAsync(cancellationToken);
         }
-
     }
 }

@@ -80,7 +80,7 @@ namespace FashionERP.Tests.Services
                 DepartmentId = Guid.NewGuid(),
                 Position = "Sales",
                 BaseSalary = 8_000_000,
-                StartDate = DateOnly.FromDateTime(DateTime.Today)
+                StartDate = DateTime.Today // ĐÃ SỬA Ở ĐÂY
             };
 
             mockService.Setup(s => s.CreateAsync(request))

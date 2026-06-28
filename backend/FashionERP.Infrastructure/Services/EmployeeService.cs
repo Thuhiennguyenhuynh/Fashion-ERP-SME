@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -46,16 +47,13 @@ namespace FashionERP.Infrastructure.Services
         // ─── CREATE ───────────────────────────────────────────
         public async Task<EmployeeResponseDto> CreateAsync(CreateEmployeeRequestDto request)
         {
-            // Kiểm tra số điện thoại trùng
             if (await _db.Employees.AnyAsync(e => e.Phone == request.Phone))
                 throw new DuplicateException($"Số điện thoại '{request.Phone}' đã được sử dụng bởi nhân viên khác");
 
-            // Kiểm tra email trùng (nếu có)
             if (!string.IsNullOrEmpty(request.Email) &&
                 await _db.Employees.AnyAsync(e => e.Email == request.Email.Trim().ToLower()))
                 throw new DuplicateException($"Email '{request.Email}' đã được sử dụng bởi nhân viên khác");
 
-            // Kiểm tra phòng ban tồn tại
             if (!await _db.Departments.AnyAsync(d => d.Id == request.DepartmentId))
                 throw new NotFoundException("Phòng ban", request.DepartmentId);
 
@@ -92,7 +90,6 @@ namespace FashionERP.Infrastructure.Services
             var emp = await BaseQuery().FirstOrDefaultAsync(e => e.Id == id)
                 ?? throw new NotFoundException("Nhân viên", id);
 
-            // Kiểm tra số điện thoại trùng với nhân viên KHÁC
             if (await _db.Employees.AnyAsync(e => e.Phone == request.Phone && e.Id != id))
                 throw new DuplicateException($"Số điện thoại '{request.Phone}' đã được sử dụng bởi nhân viên khác");
 
@@ -126,6 +123,7 @@ namespace FashionERP.Infrastructure.Services
             await _db.SaveChangesAsync();
             return _mapper.Map<EmployeeResponseDto>(emp);
         }
+
         // ─── DELETE ───────────────────────────────────────────
         public async Task DeleteAsync(Guid id)
         {
@@ -134,25 +132,25 @@ namespace FashionERP.Infrastructure.Services
 
             if (await _db.Orders.AnyAsync(o => o.StaffId == id))
             {
-                // Đã có đơn hàng -> Soft Delete bằng cách chuyển trạng thái sang Nghỉ việc (Resigned)
                 emp.Status = EmployeeStatus.Resigned;
                 _db.Employees.Update(emp);
             }
             else
             {
-                // Chưa có dữ liệu liên kết -> Hard Delete (Xóa thật)
                 _db.Employees.Remove(emp);
             }
 
             await _db.SaveChangesAsync();
         }
 
-
+        // ─── UPDATE STATUS ────────────────────────────────────
         public async Task UpdateStatusAsync(Guid id, string status)
         {
             var emp = await _db.Employees.FindAsync(id)
                 ?? throw new NotFoundException("Nhân viên", id);
-            emp.Status = status;
+
+            // SỬA Ở ĐÂY: Ép kiểu từ String sang Enum
+            emp.Status = Enum.Parse<EmployeeStatus>(status);
             emp.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
@@ -170,5 +168,3 @@ namespace FashionERP.Infrastructure.Services
         }
     }
 }
-
-

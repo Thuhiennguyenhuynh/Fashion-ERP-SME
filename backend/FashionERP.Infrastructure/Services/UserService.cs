@@ -7,6 +7,7 @@ using FashionERP.Application.Common;
 using FashionERP.Application.DTOs.Auth;
 using FashionERP.Application.Interfaces;
 using FashionERP.Domain.Entities;
+using FashionERP.Domain.Enums;
 using FashionERP.Infrastructure.Data;
 
 namespace FashionERP.Infrastructure.Services
@@ -34,7 +35,7 @@ namespace FashionERP.Infrastructure.Services
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    Role = u.Role,
+                    Role = u.Role.ToString(), // Đã sửa: Chuyển Enum thành String
                     EmployeeId = u.EmployeeId,
                     IsActive = u.IsActive,
                     LastLoginAt = u.LastLoginAt
@@ -58,7 +59,7 @@ namespace FashionERP.Infrastructure.Services
             {
                 Email = email,
                 PasswordHash = _hasher.Hash(request.Password),
-                Role = request.Role,
+                Role = Enum.Parse<UserRole>(request.Role), // Đã sửa: Parse String thành Enum
                 EmployeeId = request.EmployeeId,
                 IsActive = true
             };
@@ -70,7 +71,7 @@ namespace FashionERP.Infrastructure.Services
             {
                 Id = user.Id,
                 Email = user.Email,
-                Role = user.Role,
+                Role = user.Role.ToString(), // Đã sửa
                 EmployeeId = user.EmployeeId,
                 IsActive = user.IsActive
             };
@@ -90,7 +91,7 @@ namespace FashionERP.Infrastructure.Services
             {
                 Id = user.Id,
                 Email = user.Email,
-                Role = user.Role,
+                Role = user.Role.ToString(), // Đã sửa
                 EmployeeId = user.EmployeeId,
                 IsActive = user.IsActive,
                 LastLoginAt = user.LastLoginAt

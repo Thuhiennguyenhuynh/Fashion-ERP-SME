@@ -39,7 +39,6 @@ namespace FashionERP.Domain.Entities
         public ReturnStatus Status { get; set; } = ReturnStatus.Pending;
 
         [Required(ErrorMessage = "Người tạo phiếu đổi trả không được để trống")]
-        public Guid CreatedBy { get; set; }
         public virtual User Creator { get; set; } = null!;
     }
 }

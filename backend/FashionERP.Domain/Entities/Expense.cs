@@ -25,7 +25,7 @@ namespace FashionERP.Domain.Entities
         public DateTime ExpenseDate { get; set; }
 
         [Required(ErrorMessage = "Người tạo chi phí không được để trống")]
-        public Guid CreatedBy { get; set; }
+      
         public virtual User Creator { get; set; } = null!;
     }
 }

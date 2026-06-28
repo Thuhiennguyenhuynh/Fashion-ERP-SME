@@ -21,5 +21,8 @@
     <ProjectReference Include="..\FashionERP.Application\FashionERP.Application.csproj" />
     <ProjectReference Include="..\FashionERP.Domain\FashionERP.Domain.csproj" />
   </ItemGroup>
+		<ItemGroup>
+			<FrameworkReference Include="Microsoft.AspNetCore.App" />
+		</ItemGroup>
 
 </Project>

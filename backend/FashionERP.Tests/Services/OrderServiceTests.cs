@@ -10,21 +10,16 @@ namespace FashionERP.Tests.Services
 {
     public class OrderServiceTests
     {
-        // --- CreateAsync ---
         [Fact]
         public async Task CreateAsync_ValidRequest_ReturnsOrder()
         {
-            // Arrange
             var mockService = new Mock<IOrderService>();
-            var request = new CreateOrderRequestDto(/* fill fields */);
+            var request = new CreateOrderRequestDto();
             var staffId = Guid.NewGuid();
             mockService.Setup(s => s.CreateAsync(request, staffId))
-                .ReturnsAsync(new OrderResponseDto { /* ... */ });
+                .ReturnsAsync(new OrderResponseDto { });
 
-            // Act
             var result = await mockService.Object.CreateAsync(request, staffId);
-
-            // Assert
             Assert.NotNull(result);
         }
 
@@ -35,7 +30,7 @@ namespace FashionERP.Tests.Services
             var orderId = Guid.NewGuid();
             mockService.Setup(s => s.CancelAsync(orderId)).Returns(Task.CompletedTask);
 
-            await mockService.Object.CancelAsync(orderId); // should not throw
+            await mockService.Object.CancelAsync(orderId);
         }
 
         [Fact]
@@ -53,7 +48,7 @@ namespace FashionERP.Tests.Services
         {
             var mockService = new Mock<IOrderService>();
             mockService.Setup(s => s.GetAllAsync(null, null, null, null, 1, 20))
-                .ReturnsAsync(new PagedResult<OrderResponseDto>(new(), 0, 1, 20));
+                .ReturnsAsync(new PagedResult<OrderResponseDto> { Items = new(), TotalCount = 0, Page = 1, PageSize = 20 });
 
             var result = await mockService.Object.GetAllAsync(null, null, null, null, 1, 20);
             Assert.NotNull(result);

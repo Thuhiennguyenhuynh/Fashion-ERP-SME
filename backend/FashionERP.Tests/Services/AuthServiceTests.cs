@@ -1,8 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Xunit;
 using Moq;
 using FashionERP.Application.Interfaces;
 using FashionERP.Application.DTOs.Auth;
+using FashionERP.Application.Common;
 
 namespace FashionERP.Tests.Services
 {
@@ -13,10 +15,10 @@ namespace FashionERP.Tests.Services
         {
             var mockService = new Mock<IAuthService>();
             mockService.Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
-                .ThrowsAsync(new Application.Common.BusinessException("Sai mật khẩu"));
+                .ThrowsAsync(new BusinessException("Sai mật khẩu"));
 
-            await Assert.ThrowsAsync<Application.Common.BusinessException>(
-                () => mockService.Object.LoginAsync(new LoginRequestDto("test@test.com", "wrong")));
+            await Assert.ThrowsAsync<BusinessException>(
+                () => mockService.Object.LoginAsync(new LoginRequestDto { Email = "test@test.com", Password = "wrong" }));
         }
 
         [Fact]
@@ -24,9 +26,10 @@ namespace FashionERP.Tests.Services
         {
             var mockService = new Mock<IAuthService>();
             mockService.Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
-                .ReturnsAsync(new LoginResponseDto { AccessToken = "token123" });
+                // Sửa thành AuthResponseDto
+                .ReturnsAsync(new AuthResponseDto { AccessToken = "token123" });
 
-            var result = await mockService.Object.LoginAsync(new LoginRequestDto("a@b.com", "pass"));
+            var result = await mockService.Object.LoginAsync(new LoginRequestDto { Email = "a@b.com", Password = "pass" });
             Assert.Equal("token123", result.AccessToken);
         }
 
@@ -35,13 +38,13 @@ namespace FashionERP.Tests.Services
         {
             var mockService = new Mock<IAuthService>();
             mockService.Setup(s => s.ChangePasswordAsync(
-                    It.IsAny<System.Guid>(), It.IsAny<ChangePasswordRequestDto>()))
-                .ThrowsAsync(new Application.Common.BusinessException("Mật khẩu mới không được trùng cũ"));
+                    It.IsAny<Guid>(), It.IsAny<ChangePasswordRequestDto>()))
+                .ThrowsAsync(new BusinessException("Mật khẩu mới không được trùng cũ"));
 
-            await Assert.ThrowsAsync<Application.Common.BusinessException>(
+            await Assert.ThrowsAsync<BusinessException>(
                 () => mockService.Object.ChangePasswordAsync(
-                    System.Guid.NewGuid(),
-                    new ChangePasswordRequestDto("same", "same")));
+                    Guid.NewGuid(),
+                    new ChangePasswordRequestDto { CurrentPassword = "same", NewPassword = "same" }));
         }
     }
 }

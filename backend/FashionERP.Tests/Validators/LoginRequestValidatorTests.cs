@@ -9,25 +9,19 @@ namespace FashionERP.Tests.Validators
     {
         private readonly LoginRequestValidator _validator = new();
 
-        // ─── Email rỗng ───────────────────────────────────────────────────────
         [Fact]
         public void Email_Empty_ShouldHaveValidationError()
         {
-            var dto = new LoginRequestDto(string.Empty, "Password@1");
-
+            var dto = new LoginRequestDto { Email = string.Empty, Password = "Password@1" };
             var result = _validator.TestValidate(dto);
-
             result.ShouldHaveValidationErrorFor(x => x.Email);
         }
 
-        // ─── Password rỗng ───────────────────────────────────────────────────
         [Fact]
         public void Password_Empty_ShouldHaveValidationError()
         {
-            var dto = new LoginRequestDto("test@test.com", string.Empty);
-
+            var dto = new LoginRequestDto { Email = "test@test.com", Password = string.Empty };
             var result = _validator.TestValidate(dto);
-
             result.ShouldHaveValidationErrorFor(x => x.Password);
         }
     }
