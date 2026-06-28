@@ -25,8 +25,8 @@ namespace FashionERP.Infrastructure
             services.AddScoped<IPromotionService, PromotionService>();
 
             // ── HR Services ───────────────────────────────────
-           // services.AddScoped<IAttendanceService, AttendanceService>();
-           // services.AddScoped<ILeaveService, LeaveService>();
+           services.AddScoped<IAttendanceService, AttendanceService>();
+           services.AddScoped<ILeaveService, LeaveService>();
             services.AddScoped<IPayrollService, PayrollService>();
 
             // ── External Services ─────────────────────────────

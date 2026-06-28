@@ -1,10 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xunit;
 using Moq;
 using FashionERP.Application.Interfaces;
 using FashionERP.Application.DTOs.Auth;
 using FashionERP.Application.Common;
+using System;
 
 namespace FashionERP.Tests.Services
 {
@@ -26,7 +26,6 @@ namespace FashionERP.Tests.Services
         {
             var mockService = new Mock<IAuthService>();
             mockService.Setup(s => s.LoginAsync(It.IsAny<LoginRequestDto>()))
-                // Sửa thành AuthResponseDto
                 .ReturnsAsync(new AuthResponseDto { AccessToken = "token123" });
 
             var result = await mockService.Object.LoginAsync(new LoginRequestDto { Email = "a@b.com", Password = "pass" });

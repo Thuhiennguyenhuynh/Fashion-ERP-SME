@@ -11,7 +11,6 @@ namespace FashionERP.Tests.Services
 {
     public class EmployeeServiceTests
     {
-        // ─── GetAll ──────────────────────────────────────────────────────────
         [Fact]
         public async Task GetAllAsync_ReturnsListOfEmployees()
         {
@@ -29,7 +28,6 @@ namespace FashionERP.Tests.Services
             Assert.Equal(2, result.Count);
         }
 
-        // ─── GetById ─────────────────────────────────────────────────────────
         [Fact]
         public async Task GetByIdAsync_NotFound_ThrowsNotFoundException()
         {
@@ -42,7 +40,6 @@ namespace FashionERP.Tests.Services
                 () => mockService.Object.GetByIdAsync(fakeId));
         }
 
-        // ─── UpdateStatus ────────────────────────────────────────────────────
         [Fact]
         public async Task UpdateStatusAsync_ValidStatus_CompletesWithoutException()
         {
@@ -51,12 +48,10 @@ namespace FashionERP.Tests.Services
             mockService.Setup(s => s.UpdateStatusAsync(id, "Resigned"))
                 .Returns(Task.CompletedTask);
 
-            // Should not throw
             await mockService.Object.UpdateStatusAsync(id, "Resigned");
             mockService.Verify(s => s.UpdateStatusAsync(id, "Resigned"), Times.Once);
         }
 
-        // ─── Delete ──────────────────────────────────────────────────────────
         [Fact]
         public async Task DeleteAsync_ValidId_CompletesWithoutException()
         {
@@ -68,7 +63,6 @@ namespace FashionERP.Tests.Services
             mockService.Verify(s => s.DeleteAsync(id), Times.Once);
         }
 
-        // ─── Create ──────────────────────────────────────────────────────────
         [Fact]
         public async Task CreateAsync_ValidRequest_ReturnsEmployee()
         {
@@ -80,7 +74,7 @@ namespace FashionERP.Tests.Services
                 DepartmentId = Guid.NewGuid(),
                 Position = "Sales",
                 BaseSalary = 8_000_000,
-                StartDate = DateTime.Today // ĐÃ SỬA Ở ĐÂY
+                StartDate = DateTime.Today
             };
 
             mockService.Setup(s => s.CreateAsync(request))

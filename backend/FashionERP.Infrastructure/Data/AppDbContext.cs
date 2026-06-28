@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using FashionERP.Domain.Entities;
 using FashionERP.Domain.Enums;
 using FashionERP.Domain.Common;
-
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using CloudinaryDotNet.Core;
 
 namespace FashionERP.Infrastructure.Data
 {
@@ -20,6 +20,7 @@ namespace FashionERP.Infrastructure.Data
         {
             _httpContextAccessor = httpContextAccessor;
         }
+
         // ===== Auth & HR =====
         public DbSet<User> Users => Set<User>();
         public DbSet<Department> Departments => Set<Department>();
@@ -49,6 +50,11 @@ namespace FashionERP.Infrastructure.Data
         public DbSet<Expense> Expenses => Set<Expense>();
         public DbSet<SizeChart> SizeCharts => Set<SizeChart>();
         public DbSet<AILog> AILogs => Set<AILog>();
+
+        // ===== Procurement =====
+        public DbSet<Supplier> Suppliers => Set<Supplier>();
+        public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+        public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -80,8 +86,12 @@ namespace FashionERP.Infrastructure.Data
             ConfigureSizeCharts(modelBuilder);
             ConfigureAILogs(modelBuilder);
 
+            // Procurement
+            ConfigureSuppliers(modelBuilder);
+            ConfigurePurchaseOrders(modelBuilder);
+            ConfigurePurchaseOrderItems(modelBuilder);
+
             // ===== SOFT DELETE: tự áp Global Query Filter cho MỌI entity =====
-            // implement ISoftDeletable, không cần khai .HasQueryFilter() riêng từng entity.
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
@@ -98,7 +108,60 @@ namespace FashionERP.Infrastructure.Data
             => builder.Entity<T>().HasQueryFilter(e => !e.IsDeleted);
 
         // ============================================================
-        // 1. AUTH & HR
+        // 1. PROCUREMENT
+        // ============================================================
+        private static void ConfigureSuppliers(ModelBuilder b)
+        {
+            b.Entity<Supplier>(e =>
+            {
+                e.ToTable("Suppliers");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Name).IsRequired().HasMaxLength(200);
+                e.Property(x => x.Phone).IsRequired().HasMaxLength(15);
+                e.HasIndex(x => x.Phone).IsUnique();
+            });
+        }
+
+        private static void ConfigurePurchaseOrders(ModelBuilder b)
+        {
+            b.Entity<PurchaseOrder>(e =>
+            {
+                e.ToTable("PurchaseOrders");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.PoCode).IsRequired().HasMaxLength(30);
+                e.HasIndex(x => x.PoCode).IsUnique();
+
+                e.HasOne(x => x.Supplier)
+                    .WithMany(s => s.PurchaseOrders)
+                    .HasForeignKey(x => x.SupplierId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+        }
+
+        private static void ConfigurePurchaseOrderItems(ModelBuilder b)
+        {
+            b.Entity<PurchaseOrderItem>(e =>
+            {
+                e.ToTable("PurchaseOrderItems");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.ProductName).IsRequired().HasMaxLength(200);
+                e.Property(x => x.Size).IsRequired().HasMaxLength(10);
+                e.Property(x => x.Color).IsRequired().HasMaxLength(50);
+
+                e.HasOne(x => x.PurchaseOrder)
+                    .WithMany(po => po.Items)
+                    .HasForeignKey(x => x.PurchaseOrderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.Variant)
+                    .WithMany()
+                    .HasForeignKey(x => x.VariantId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+        }
+
+        // ============================================================
+        // 2. AUTH & HR
         // ============================================================
 
         private static void ConfigureUsers(ModelBuilder b)
@@ -116,7 +179,6 @@ namespace FashionERP.Infrastructure.Data
                     .IsRequired();
                 e.Property(x => x.RefreshToken).HasMaxLength(512);
 
-                // 1-1 với Employee (nullable)
                 e.HasOne(x => x.Employee)
                     .WithOne(x => x.User)
                     .HasForeignKey<User>(x => x.EmployeeId)
@@ -134,7 +196,6 @@ namespace FashionERP.Infrastructure.Data
                 e.HasIndex(x => x.Name).IsUnique();
                 e.Property(x => x.Description).HasMaxLength(500);
 
-                // Manager (Employee) - không cascade để tránh multiple cascade path
                 e.HasOne(x => x.Manager)
                     .WithMany()
                     .HasForeignKey(x => x.ManagerId)
@@ -180,7 +241,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.Type).HasConversion<string>().HasMaxLength(20);
                 e.Property(x => x.Note).HasMaxLength(300);
 
-                // INDEX: (employeeId, workDate) UNIQUE - 1 nhân viên 1 bản ghi/ngày
                 e.HasIndex(x => new { x.EmployeeId, x.WorkDate }).IsUnique();
 
                 e.HasOne(x => x.Employee)
@@ -225,7 +285,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.NetSalary).HasColumnType("decimal(15,2)");
                 e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
 
-                // INDEX: (employeeId, month, year) UNIQUE
                 e.HasIndex(x => new { x.EmployeeId, x.Month, x.Year }).IsUnique();
 
                 e.HasOne(x => x.Employee)
@@ -236,7 +295,7 @@ namespace FashionERP.Infrastructure.Data
         }
 
         // ============================================================
-        // 2. PRODUCTS & INVENTORY
+        // 3. PRODUCTS & INVENTORY
         // ============================================================
 
         private static void ConfigureCategories(ModelBuilder b)
@@ -251,7 +310,6 @@ namespace FashionERP.Infrastructure.Data
                 e.HasIndex(x => x.Slug).IsUnique();
                 e.Property(x => x.Description).HasMaxLength(300);
 
-                // Self-referencing - nested categories
                 e.HasOne(x => x.Parent)
                     .WithMany(x => x.Children)
                     .HasForeignKey(x => x.ParentId)
@@ -312,7 +370,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.PublicId).IsRequired().HasMaxLength(200);
                 e.Property(x => x.AltText).HasMaxLength(200);
 
-                // CASCADE DELETE theo Product
                 e.HasOne(x => x.Product)
                     .WithMany(p => p.Images)
                     .HasForeignKey(x => x.ProductId)
@@ -337,10 +394,8 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.ImageUrl).HasMaxLength(500);
                 e.Property(x => x.ImagePublicId).HasMaxLength(200);
 
-                // INDEX: (productId, size, color) UNIQUE
                 e.HasIndex(x => new { x.ProductId, x.Size, x.Color }).IsUnique();
 
-                // CASCADE DELETE theo Product
                 e.HasOne(x => x.Product)
                     .WithMany(p => p.Variants)
                     .HasForeignKey(x => x.ProductId)
@@ -357,7 +412,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.Location).HasMaxLength(100);
                 e.Property(x => x.AvgCost).HasColumnType("decimal(15,2)");
 
-                // 1 variant - 1 dòng tồn kho (UNIQUE)
                 e.HasIndex(x => x.VariantId).IsUnique();
 
                 e.HasOne(x => x.Variant)
@@ -391,7 +445,7 @@ namespace FashionERP.Infrastructure.Data
         }
 
         // ============================================================
-        // 3. CUSTOMERS & SALES
+        // 4. CUSTOMERS & SALES
         // ============================================================
 
         private static void ConfigureCustomers(ModelBuilder b)
@@ -427,7 +481,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.Waist).HasColumnType("decimal(5,1)");
                 e.Property(x => x.Hip).HasColumnType("decimal(5,1)");
 
-                // 1 khách - 1 dòng (UNIQUE)
                 e.HasIndex(x => x.CustomerId).IsUnique();
 
                 e.HasOne(x => x.Customer)
@@ -470,7 +523,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
                 e.Property(x => x.Note).HasMaxLength(300);
 
-                // NULL = khách lẻ
                 e.HasOne(x => x.Customer)
                     .WithMany(c => c.Orders)
                     .HasForeignKey(x => x.CustomerId)
@@ -500,7 +552,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.UnitPrice).HasColumnType("decimal(15,2)");
                 e.Property(x => x.LineTotal).HasColumnType("decimal(15,2)");
 
-                // CASCADE DELETE theo Order
                 e.HasOne(x => x.Order)
                     .WithMany(o => o.Items)
                     .HasForeignKey(x => x.OrderId)
@@ -542,7 +593,7 @@ namespace FashionERP.Infrastructure.Data
         }
 
         // ============================================================
-        // 4. ACCOUNTING & AI
+        // 5. ACCOUNTING & AI
         // ============================================================
 
         private static void ConfigureExpenses(ModelBuilder b)
@@ -583,7 +634,6 @@ namespace FashionERP.Infrastructure.Data
                 e.Property(x => x.MinHip).HasColumnType("decimal(5,1)");
                 e.Property(x => x.MaxHip).HasColumnType("decimal(5,1)");
 
-                // INDEX: (productType, gender, size) UNIQUE
                 e.HasIndex(x => new { x.ProductType, x.Gender, x.Size }).IsUnique();
             });
         }
