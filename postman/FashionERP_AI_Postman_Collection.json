@@ -1,0 +1,159 @@
+{
+  "info": {
+    "name": "FashionERP - AI Module",
+    "description": "Test 3 endpoint AIController (chatbot, size-recommend, inventory-forecast) qua server mock-ai-service. Chạy Login trước để lấy token cho inventory-forecast.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "variantId", "value": "00000000-0000-0000-0000-000000000000", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login (lấy token cho Forecast)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/Auth/login", "host": ["{{baseUrl}}"], "path": ["api", "Auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@fashionerp.vn\",\n  \"password\": \"Fashion@2025\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var json = pm.response.json();",
+              "pm.test('Login status 200', () => pm.response.code === 200);",
+              "if (json.data && json.data.accessToken) {",
+              "    pm.collectionVariables.set('token', json.data.accessToken);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI - Chatbot",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/AI/chatbot", "host": ["{{baseUrl}}"], "path": ["api", "AI", "chatbot"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Tôi muốn mua áo sơ mi nam dáng slimfit\",\n  \"history\": []\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.code === 200);",
+              "var json = pm.response.json();",
+              "pm.test('Có field reply', () => json.data && typeof json.data.reply === 'string');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI - Chatbot (test timeout 30s)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/AI/chatbot", "host": ["{{baseUrl}}"], "path": ["api", "AI", "chatbot"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"TEST_TIMEOUT\",\n  \"history\": []\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Trả lỗi 504 (AI service timeout)', () => pm.response.code === 504);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI - Size Recommend",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/AI/size-recommend", "host": ["{{baseUrl}}"], "path": ["api", "AI", "size-recommend"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productType\": \"Shirt\",\n  \"gender\": \"Male\",\n  \"height\": 175,\n  \"weight\": 68,\n  \"chest\": 92,\n  \"waist\": 80,\n  \"hip\": null,\n  \"customerId\": null\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.code === 200);",
+              "var json = pm.response.json();",
+              "pm.test('Có field recommendedSize', () => json.data && typeof json.data.recommendedSize === 'string');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI - Size Recommend (sai enum -> 400)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "{{baseUrl}}/api/AI/size-recommend", "host": ["{{baseUrl}}"], "path": ["api", "AI", "size-recommend"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"productType\": \"Ao\",\n  \"gender\": \"Male\",\n  \"height\": 175,\n  \"weight\": 68\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Trả lỗi 400 do enum sai', () => pm.response.code === 400);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI - Inventory Forecast (cần token Admin/Manager/Warehouse)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/AI/inventory-forecast", "host": ["{{baseUrl}}"], "path": ["api", "AI", "inventory-forecast"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"variantId\": \"{{variantId}}\",\n  \"horizonDays\": 30\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', () => pm.response.code === 200);",
+              "var json = pm.response.json();",
+              "pm.test('Có field forecast hoặc note (đủ/thiếu data)', () => json.data && (json.data.forecast || json.data.note));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
