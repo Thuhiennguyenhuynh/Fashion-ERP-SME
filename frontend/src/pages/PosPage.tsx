@@ -1,267 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import { Input, Button, Divider, Select, message, Empty, Spin } from 'antd';
-import { 
-  SearchOutlined, 
-  BarcodeOutlined, 
-  DeleteOutlined, 
-  UserOutlined,
-  ShoppingOutlined
-} from '@ant-design/icons';
-import axiosClient from '../api/axiosClient';
+import React, { useState } from 'react';
+import { Row, Col, Input, Button, Card, Select, message, Typography, Divider, Modal } from 'antd';
+import { ScanOutlined, PayCircleOutlined, CameraOutlined } from '@ant-design/icons';
+import { useCartStore } from '../stores/useCartStore';
+import { posApi } from '../api/posApi';
+import WebcamScanner from '../components/WebcamScanner';
 
-// Định nghĩa Interface dựa trên CreateOrderRequestDto của Backend
-interface CartItem {
-  variantId: string;
-  productId: string;
-  name: string;
-  size: string;
-  color: string;
-  price: number;
-  quantity: number;
-}
+const { Title, Text } = Typography;
 
-export default function PosPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+const PosPage: React.FC = () => {
+  const cart = useCartStore();
   
-  // State quản lý Giỏ hàng và Checkout
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<string>('Cash');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // State quản lý Input và Camera
+  const [barcode, setBarcode] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
-  // Lấy danh sách sản phẩm mẫu
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res: any = await axiosClient.get('/products', { params: { pageSize: 20 } });
-        setProducts(res.items || []);
-      } catch (error) {
-        message.error("Lỗi tải danh sách sản phẩm");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
+  // Tính toán tiền
+  const subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+  const tax = subtotal * 0.08; // VAT giả định 8%
+  const finalAmount = subtotal + tax - cart.discountAmount;
 
-  // Thêm sản phẩm vào giỏ
-  const addToCart = (product: any, variant: any) => {
-    setCart((prev) => {
-      const existing = prev.find(item => item.variantId === variant.id);
-      if (existing) {
-        return prev.map(item => 
-          item.variantId === variant.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
+  // HÀM XỬ LÝ CHUNG: Nhận barcode từ Input hoặc Camera
+  const processBarcode = async (code: string) => {
+    const cleanCode = code.trim(); 
+    if (!cleanCode) return;
+    
+    // Hiển thị loading để người dùng biết hệ thống đang xử lý
+    message.loading({ content: `Đang tìm mã: ${cleanCode}...`, key: 'scan' });
+    
+  try {
+      const res = await posApi.getVariantByBarcode(cleanCode);
+      
+      // IN RA CONSOLE ĐỂ KIỂM TRA DỮ LIỆU GỐC
+      console.log("Dữ liệu API trả về:", res);
+
+      // FIX TRIỆT ĐỂ: Quét qua tất cả các lớp vỏ có thể có của Axios
+      let variant = null;
+      if (res?.data?.data?.id) {
+        variant = res.data.data; // Nếu Axios giữ nguyên toàn bộ response
+      } else if (res?.data?.id) {
+        variant = res.data;      // Nếu Interceptor đã bóc vỏ ngoài (trả về response.data)
+      } else if (res?.id) {
+        variant = res;           // Nếu Interceptor bóc luôn vỏ API (trả về response.data.data)
       }
-      return [...prev, {
+
+      // Đề phòng trường hợp Variant rỗng
+      if (!variant || !variant.id) {
+         throw new Error(`Không lấy được cấu trúc sản phẩm. Dữ liệu thực tế: ${JSON.stringify(res)}`);
+      }
+      
+      cart.addItem({
         variantId: variant.id,
-        productId: product.id,
-        name: product.name,
+        productId: variant.product.id,
+        productName: variant.product.name,
         size: variant.size,
         color: variant.color,
-        price: variant.price || product.basePrice,
-        quantity: 1
-      }];
-    });
+        unitPrice: variant.price || 0, 
+        quantity: 1,
+        maxStock: variant.stockQuantity || 999 
+      });
+      
+      message.success({ content: `Đã thêm ${variant.product.name} vào giỏ`, key: 'scan' });
+    } catch (error: any) {
+      console.error("Lỗi chi tiết khi quét mã:", error);
+      message.error({ content: 'Không tìm thấy sản phẩm với mã vạch này!', key: 'scan' });
+    }
   };
 
-  // Cập nhật số lượng
-  const updateQuantity = (variantId: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.variantId === variantId) {
-        const newQty = item.quantity + delta;
-        return newQty > 0 ? { ...item, quantity: newQty } : item;
-      }
-      return item;
-    }));
+  // Xử lý khi gõ tay / máy quét USB (bấm Enter)
+  const handleInputEnter = () => {
+    processBarcode(barcode);
+    setBarcode(''); // Reset input ngay lập tức
   };
 
-  // Xóa khỏi giỏ
-  const removeRow = (variantId: string) => {
-    setCart(prev => prev.filter(item => item.variantId !== variantId));
+  // Xử lý khi Webcam quét thành công
+  const handleCameraScanSuccess = (scannedCode: string) => {
+    setIsCameraOpen(false); // Đóng modal camera
+    processBarcode(scannedCode);
   };
 
-  // Tính toán tổng tiền
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.08; // VAT 8% mặc định
-  const finalTotal = subtotal + tax;
-
-  // Xử lý Đặt hàng
+  // Chốt đơn hàng
   const handleCheckout = async () => {
-    if (cart.length === 0) {
-      message.warning("Giỏ hàng đang trống!");
-      return;
+    if (cart.items.length === 0) {
+      return message.warning('Giỏ hàng đang trống!');
     }
     
-    setIsSubmitting(true);
     try {
-      // Mapping dữ liệu theo CreateOrderRequestDto của Backend
       const payload = {
-        paymentMethod: paymentMethod,
-        items: cart.map(c => ({
-          variantId: c.variantId,
-          quantity: c.quantity
-        }))
+        customerId: cart.customerId,
+        paymentMethod: cart.paymentMethod,
+        promotionCode: cart.promotionCode,
+        items: cart.items.map(i => ({ variantId: i.variantId, quantity: i.quantity }))
       };
-
-      await axiosClient.post('/orders', payload);
-      message.success("Tạo đơn hàng thành công!");
-      setCart([]); // Reset giỏ hàng
+      
+      await posApi.createOrder(payload);
+      message.success('Tạo đơn hàng thành công!');
+      cart.clearCart();
     } catch (error: any) {
-      message.error(error?.message || "Lỗi khi tạo đơn hàng");
-    } finally {
-      setIsSubmitting(false);
+      message.error(error.response?.data?.message || 'Lỗi khi tạo đơn');
     }
   };
 
   return (
-    // Layout fixed không cuộn toàn trang, chiều cao bằng 100vh trừ đi Header (64px) và Padding
-    <div className="flex h-[calc(100vh-112px)] -m-6 md:-m-8 bg-neutral-50 overflow-hidden font-sans">
-      
-      {/* CỘT TRÁI: TÌM KIẾM & SẢN PHẨM (Chiếm 65% width) */}
-      <div className="flex-1 flex flex-col border-r border-neutral-200/80 bg-neutral-50/50">
-        {/* Thanh tìm kiếm */}
-        <div className="p-4 bg-white border-b border-neutral-200/80 flex gap-3 shadow-sm z-10">
-          <Input 
-            size="large" 
-            placeholder="Tìm kiếm sản phẩm theo tên hoặc mã..." 
-            prefix={<SearchOutlined className="text-neutral-400" />}
-            className="rounded-md"
-          />
-          <Button size="large" icon={<BarcodeOutlined />} className="rounded-md">
-            Quét mã
-          </Button>
-        </div>
+    <div style={{ padding: '16px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Row gutter={16} style={{ flex: 1 }}>
+        
+        {/* CỘT TRÁI: Tìm kiếm & Danh sách sản phẩm */}
+        <Col span={14} style={{ display: 'flex', flexDirection: 'column' }}>
+          <Card size="small" style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Input 
+                style={{ flex: 1 }}
+                size="large"
+                placeholder="Quét mã vạch USB hoặc nhập tay..." 
+                prefix={<ScanOutlined />}
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                onPressEnter={handleInputEnter}
+                autoFocus
+              />
+              <Button 
+                size="large" 
+                icon={<CameraOutlined />} 
+                onClick={() => setIsCameraOpen(true)}
+              >
+                Webcam
+              </Button>
+            </div>
+          </Card>
+          
+          <Card style={{ flex: 1, overflowY: 'auto' }}>
+            <Text type="secondary">Danh sách sản phẩm (Grid View) sẽ được hiển thị ở đây...</Text>
+          </Card>
+        </Col>
 
-        {/* Lưới sản phẩm (Scrollable) */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          {loading ? (
-            <div className="flex h-full items-center justify-center"><Spin size="large" /></div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {products.map((p) => (
-                <div key={p.id} className="bg-white rounded-xl border border-neutral-200 overflow-hidden hover:shadow-md transition-shadow">
-                  <div className="aspect-square bg-neutral-100 relative">
-                    <img 
-                      src={p.mainImageUrl || 'https://placehold.co/400x400?text=No+Image'} 
-                      alt={p.name}
-                      className="w-full h-full object-cover"
-                    />
+        {/* CỘT PHẢI: Giỏ hàng & Thanh toán */}
+        <Col span={10} style={{ display: 'flex', flexDirection: 'column' }}>
+          <Card title="Khách hàng & Giỏ hàng" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Select 
+              showSearch
+              placeholder="Tìm khách hàng theo SĐT..."
+              style={{ width: '100%', marginBottom: '16px' }}
+            />
+
+            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+              {cart.items.map(item => (
+                <div key={item.variantId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div>
+                    <Text strong>{item.productName}</Text><br/>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>{item.color} - {item.size}</Text>
                   </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-medium text-neutral-800 line-clamp-1">{p.name}</h3>
-                    <p className="text-xs text-neutral-500 mt-1">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.basePrice)}</p>
-                    
-                    {/* Danh sách Variant để chọn nhanh */}
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {p.variants?.map((v: any) => (
-                        <button
-                          key={v.id}
-                          onClick={() => addToCart(p, v)}
-                          className="px-2 py-1 text-[10px] uppercase tracking-wider font-medium border border-neutral-300 rounded hover:border-neutral-800 hover:bg-neutral-50 transition-colors"
-                        >
-                          {v.size} - {v.color}
-                        </button>
-                      ))}
-                    </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <Text>{item.quantity} x {item.unitPrice.toLocaleString()}đ</Text>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* CỘT PHẢI: GIỎ HÀNG & CHECKOUT (Chiếm 35% width, min 380px) */}
-      <div className="w-[380px] lg:w-[420px] bg-white flex flex-col shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-20">
-        
-        {/* Header Giỏ hàng */}
-        <div className="p-4 border-b border-neutral-100 flex items-center gap-2">
-          <ShoppingOutlined className="text-xl" />
-          <h2 className="text-lg font-medium text-neutral-800 tracking-wide uppercase">Giỏ hàng</h2>
-          <span className="ml-auto bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded-full text-xs font-semibold">
-            {cart.reduce((a, b) => a + b.quantity, 0)}
-          </span>
-        </div>
+            <Divider />
 
-        {/* Danh sách Items (Scrollable) */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {cart.length === 0 ? (
-            <Empty description={<span className="text-neutral-400 font-light">Chưa có sản phẩm nào</span>} />
-          ) : (
-            cart.map((item) => (
-              <div key={item.variantId} className="flex gap-3 group">
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium text-neutral-800 line-clamp-1">{item.name}</h4>
-                  <div className="text-xs text-neutral-500 mt-0.5">
-                    {item.size} • {item.color}
-                  </div>
-                  <div className="font-medium text-neutral-900 mt-1">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}
-                  </div>
-                </div>
-                
-                {/* Bộ điều khiển Số lượng */}
-                <div className="flex flex-col items-end justify-between">
-                  <Button onClick={() => removeRow(item.variantId)} className="text-neutral-300 hover:text-red-500 transition-colors">
-                    <DeleteOutlined />
-                  </Button>
-                  <div className="flex items-center border border-neutral-200 rounded-md">
-                    <button onClick={() => updateQuantity(item.variantId, -1)} className="px-2 py-0.5 text-neutral-500 hover:bg-neutral-100">-</button>
-                    <span className="px-2 py-0.5 text-sm font-medium text-neutral-800 min-w-[30px] text-center">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(item.variantId, 1)} className="px-2 py-0.5 text-neutral-500 hover:bg-neutral-100">+</button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer Checkout */}
-        <div className="p-4 bg-neutral-50/50 border-t border-neutral-200">
-          <Button className="w-full text-left flex justify-between items-center text-neutral-600 bg-white border-neutral-200 h-10 mb-4 rounded-md">
-            <span><UserOutlined className="mr-2"/> Chọn khách hàng...</span>
-          </Button>
-
-          <div className="space-y-2 mb-4 text-sm">
-            <div className="flex justify-between text-neutral-600">
-              <span>Tạm tính</span>
-              <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(subtotal)}</span>
+            {/* Khối tính tiền */}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Text>Tạm tính:</Text>
+              <Text>{subtotal.toLocaleString()}đ</Text>
             </div>
-            <div className="flex justify-between text-neutral-600">
-              <span>Thuế VAT (8%)</span>
-              <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tax)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Text>Giảm giá:</Text>
+              <Text type="danger">-{cart.discountAmount.toLocaleString()}đ</Text>
             </div>
-            <Divider className="my-2" />
-            <div className="flex justify-between text-base font-semibold text-neutral-900">
-              <span className="uppercase tracking-wider">Tổng cộng</span>
-              <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(finalTotal)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+              <Title level={4}>Khách phải trả:</Title>
+              <Title level={4} type="success">{finalAmount.toLocaleString()}đ</Title>
             </div>
-          </div>
 
-          <Select 
-            value={paymentMethod} 
-            onChange={setPaymentMethod}
-            className="w-full mb-4 h-10"
-            options={[
-              { value: 'Cash', label: 'Thanh toán Tiền mặt' },
-              { value: 'Transfer', label: 'Chuyển khoản (QR Code)' },
-              { value: 'Card', label: 'Quẹt thẻ (POS)' },
-            ]}
-          />
+            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+              <Button type={cart.paymentMethod === 'Cash' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Cash')}>Tiền mặt</Button>
+              <Button type={cart.paymentMethod === 'Transfer' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Transfer')}>Chuyển khoản</Button>
+              <Button type={cart.paymentMethod === 'Card' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Card')}>Quẹt thẻ</Button>
+            </div>
 
-          <Button 
-            type="primary" 
-            size="large" 
-            onClick={handleCheckout}
-            loading={isSubmitting}
-            className="w-full bg-neutral-900 text-white font-medium tracking-widest uppercase h-12 rounded-md hover:!bg-neutral-800"
-          >
-            Thanh toán
-          </Button>
-        </div>
+            <Button 
+              type="primary" 
+              size="large" 
+              block 
+              icon={<PayCircleOutlined />} 
+              style={{ marginTop: '16px', height: '50px' }}
+              onClick={handleCheckout}
+            >
+              THANH TOÁN LƯU ĐƠN
+            </Button>
+          </Card>
+        </Col>
+      </Row>
 
-      </div>
+      {/* MODAL CAMERA */}
+      <Modal
+        title="Quét mã vạch bằng Webcam"
+        open={isCameraOpen}
+        onCancel={() => setIsCameraOpen(false)}
+        footer={null}
+        destroyOnHidden // Tắt camera khi đóng modal (fix warning của Ant Design)
+      >
+        {isCameraOpen && <WebcamScanner onScanSuccess={handleCameraScanSuccess} />}
+      </Modal>
     </div>
   );
-}
+};
+
+export default PosPage;
