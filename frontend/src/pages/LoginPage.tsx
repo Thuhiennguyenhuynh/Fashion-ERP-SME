@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card, message } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { authApi, LoginPayload } from '../api/authApi';
-import { useAuthStore } from '../store/useAuthStore';
+import { authApi } from '../services/api';
+import type { LoginRequest } from '../services/api';
+import { useAuthStore } from '../stores/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
@@ -10,25 +11,27 @@ const LoginPage: React.FC = () => {
   const setAuth = useAuthStore((state) => state.setAuth);
   const navigate = useNavigate();
 
-  const onFinish = async (values: LoginPayload) => {
+  const onFinish = async (values: LoginRequest) => {
     setLoading(true);
     try {
       // Kết nối tới C# backend
-      const response = await authApi.login(values);
-      
-      if (response.success && response.data) {
-        message.success(response.message || 'Đăng nhập thành công!');
-        
+      const result = await authApi.login(values);
+
+      if (result.success && result.data) {
+        message.success(result.message || 'Đăng nhập thành công!');
+
         // Lưu token và user vào Zustand
-        const { user, accessToken, refreshToken } = response.data;
+        const { user, accessToken, refreshToken } = result.data;
         setAuth(user, accessToken, refreshToken);
-        
+
         // Chuyển hướng vào trang chính
         navigate('/');
       }
-    } catch (error: any) {
-      // Xử lý AppException từ C# (400, 401, v.v.)
-      const errorMsg = error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : 'Đăng nhập thất bại. Vui lòng thử lại.'
       message.error(errorMsg);
     } finally {
       setLoading(false);
