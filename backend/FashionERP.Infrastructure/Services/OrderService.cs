@@ -17,11 +17,13 @@ namespace FashionERP.Infrastructure.Services
     {
         private readonly AppDbContext _db;
         private readonly IMapper _mapper;
+        private readonly ICashTransactionService _cashService;
 
-        public OrderService(AppDbContext db, IMapper mapper)
+        public OrderService(AppDbContext db, IMapper mapper, ICashTransactionService cashService)
         {
             _db = db;
             _mapper = mapper;
+            _cashService = cashService;
         }
 
         private IQueryable<Order> BaseQuery() =>
@@ -84,6 +86,9 @@ namespace FashionERP.Infrastructure.Services
                     var lineTotal = unitPrice * item.Quantity;
                     subtotal += lineTotal;
 
+                    // KHAI BÁO BIẾN GIÁ VỐN Ở ĐÂY ĐỂ TRÁNH LỖI CS0103
+                    decimal unitCostSnapshot = variant.Inventory?.AvgCost ?? 0m;
+
                     orderItems.Add(new OrderItem
                     {
                         VariantId = item.VariantId,
@@ -92,7 +97,8 @@ namespace FashionERP.Infrastructure.Services
                         Color = variant.Color,
                         UnitPrice = unitPrice,
                         Quantity = item.Quantity,
-                        LineTotal = lineTotal
+                        LineTotal = lineTotal,
+                        UnitCostSnapshot = unitCostSnapshot // Biến đã được khai báo và gán giá trị
                     });
 
                     var qBefore = variant.Inventory.Quantity;
@@ -168,6 +174,10 @@ namespace FashionERP.Infrastructure.Services
 
                 _db.Orders.Add(order);
                 await _db.SaveChangesAsync();
+                // Tự động ghi nhận doanh thu vào Sổ quỹ
+                await _cashService.RecordAsync(
+                    CashTransactionType.INCOME, "Bán hàng", order.FinalAmount,
+                    refType: "Order", refId: order.Id, note: $"Thu tiền đơn {order.OrderCode}", createdBy: null);
 
                 foreach (var item in orderItems)
                 {

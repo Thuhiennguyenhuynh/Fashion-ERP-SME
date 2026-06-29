@@ -55,6 +55,7 @@ namespace FashionERP.Infrastructure.Data
         public DbSet<Supplier> Suppliers => Set<Supplier>();
         public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
         public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+        public DbSet<CashTransaction> CashTransactions => Set<CashTransaction>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -90,6 +91,7 @@ namespace FashionERP.Infrastructure.Data
             ConfigureSuppliers(modelBuilder);
             ConfigurePurchaseOrders(modelBuilder);
             ConfigurePurchaseOrderItems(modelBuilder);
+            ConfigureCashTransactions(modelBuilder);
 
             // ===== SOFT DELETE: tự áp Global Query Filter cho MỌI entity =====
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
@@ -159,7 +161,17 @@ namespace FashionERP.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }
-
+        private static void ConfigureCashTransactions(ModelBuilder b)
+        {
+            b.Entity<CashTransaction>(e =>
+            {
+                e.ToTable("CashTransactions");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Category).IsRequired().HasMaxLength(100);
+                e.HasIndex(x => x.TransactionDate);
+                e.HasIndex(x => x.Category);
+            });
+        }
         // ============================================================
         // 2. AUTH & HR
         // ============================================================
@@ -591,6 +603,7 @@ namespace FashionERP.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
             });
         }
+
 
         // ============================================================
         // 5. ACCOUNTING & AI

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using FashionERP.Domain.Common;
 
 namespace FashionERP.Domain.Entities
@@ -46,6 +47,8 @@ namespace FashionERP.Domain.Entities
         /// <summary>= UnitPrice * Quantity</summary>
         [Required(ErrorMessage = "Tổng tiền dòng không được để trống")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Tổng tiền dòng phải lớn hơn 0")]
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal UnitCostSnapshot { get; set; }   // = Inventory.AvgCost lúc tạo Order, dùng tính COGS
         public decimal LineTotal { get; set; }
     }
 }

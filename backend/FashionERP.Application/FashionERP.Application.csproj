@@ -21,4 +21,9 @@
     <ProjectReference Include="..\FashionERP.Domain\FashionERP.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Validators\Finance\" />
+    <Folder Include="Validators\Procurement\" />
+  </ItemGroup>
+
 </Project>
