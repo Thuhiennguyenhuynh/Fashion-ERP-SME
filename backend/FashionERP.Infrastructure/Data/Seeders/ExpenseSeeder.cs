@@ -37,10 +37,11 @@
                     Amount = e.Amount,
                     Description = e.Desc,
                     ExpenseDate = now.AddDays(-e.DaysAgo),
+                    CreatedBy = adminUserId
                 };
 
                 // ✅ FIX 1: set FK đúng cách (tránh shadow nếu có property thật)
-                db.Entry(expense).Property("CreatorId").CurrentValue = adminUserId;
+                //db.Entry(expense).Property("CreatorId").CurrentValue = adminUserId;
 
                 entities.Add(expense);
             }

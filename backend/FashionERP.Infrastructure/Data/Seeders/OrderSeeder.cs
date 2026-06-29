@@ -98,7 +98,7 @@
                             QuantityBefore = 100,
                             QuantityAfter = 100 - qty,
                             Note = $"Xuất kho bán hàng {order.OrderCode}",
-                            CreatedBy = order.StaffId,
+                            CreatedBy = SeedIds.User_Admin, // <--- SỬA DÒNG NÀY
                             CreatedAt = createdAt
                         });
                     }
