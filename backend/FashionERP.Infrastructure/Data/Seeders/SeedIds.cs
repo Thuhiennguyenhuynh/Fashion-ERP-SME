@@ -69,6 +69,15 @@ namespace FashionERP.Infrastructure.Data.Seeders
         // ── Promotions ────────────────────────────────────────────────────
         public static readonly Guid Promo_Welcome = Guid.Parse("99999999-0009-0009-0009-000000000001");
         public static readonly Guid Promo_Summer = Guid.Parse("99999999-0009-0009-0009-000000000002");
+        // ── Suppliers ─────────────────────────────────────────────────────
+        public static readonly Guid Sup_VinaTextile = Guid.Parse("aaaaaaaa-000a-000a-000a-00000000000a");
+        public static readonly Guid Sup_HanoiFabric = Guid.Parse("aaaaaaaa-000a-000a-000a-00000000000b");
+        public static readonly Guid Sup_SaigonDenim = Guid.Parse("aaaaaaaa-000a-000a-000a-00000000000c");
+
+        // ── PurchaseOrders ────────────────────────────────────────────────
+        public static readonly Guid PO_001 = Guid.Parse("bbbbbbbb-000b-000b-000b-00000000000a");
+        public static readonly Guid PO_002 = Guid.Parse("bbbbbbbb-000b-000b-000b-00000000000b");
+        public static readonly Guid PO_003 = Guid.Parse("bbbbbbbb-000b-000b-000b-00000000000c");
     }
 }
 

@@ -17,7 +17,12 @@
             var random = new Random();
             var customers = await db.Customers.Select(c => c.Id).ToListAsync();
             var employees = await db.Employees.Select(e => e.Id).ToListAsync();
-            var variants = await db.ProductVariants.Include(v => v.Product).ToListAsync();
+
+            // FIX 1: include Inventory
+            var variants = await db.ProductVariants
+                .Include(v => v.Product)
+                .Include(v => v.Inventory)
+                .ToListAsync();
 
             if (!variants.Any() || !customers.Any() || !employees.Any()) return;
 
@@ -30,11 +35,10 @@
 
             for (int i = 1; i <= totalOrders; i++)
             {
-                int daysAgo = random.Next(0, 90); // Đơn hàng rải rác 3 tháng qua
+                int daysAgo = random.Next(0, 90);
                 var createdAt = now.AddDays(-daysAgo).AddHours(random.Next(-10, 10));
                 var orderId = Guid.NewGuid();
 
-                // ĐÃ SỬA: Dùng Enum OrderStatus thay vì string
                 var statusRoll = random.Next(100);
                 var status = OrderStatus.Completed;
                 if (statusRoll > 95) status = OrderStatus.Cancelled;
@@ -45,15 +49,13 @@
                     Id = orderId,
                     OrderCode = $"ORD-{createdAt:yyyyMMdd}-{i:D3}",
                     CustomerId = customers[random.Next(customers.Count)],
-
-                    // ĐÃ SỬA: Dùng StaffId theo đúng thiết kế trong Order.cs
                     StaffId = employees[random.Next(employees.Count)],
-
-                    // ĐÃ SỬA: Dùng Enum PaymentMethod
                     PaymentMethod = random.Next(100) > 30 ? PaymentMethod.Transfer : PaymentMethod.Cash,
                     Status = status,
                     CreatedAt = createdAt,
-                    CompletedAt = status == OrderStatus.Completed ? createdAt.AddHours(random.Next(1, 24)) : null,
+                    CompletedAt = status == OrderStatus.Completed
+                        ? createdAt.AddHours(random.Next(1, 24))
+                        : null,
                 };
 
                 int itemCount = random.Next(1, 4);
@@ -77,28 +79,25 @@
                         Color = variant.Color,
                         UnitPrice = price,
                         Quantity = qty,
-                        LineTotal = lineTotal
+                        LineTotal = lineTotal,
+
+                        // FIX 1: thêm cost snapshot
+                        UnitCostSnapshot = variant.Inventory?.AvgCost ?? 0
                     });
 
-                    // Quan trọng: Lưu lịch sử giao dịch kho cho AI Forecast đọc
                     if (status == OrderStatus.Completed)
                     {
                         transactions.Add(new InventoryTransaction
                         {
                             Id = Guid.NewGuid(),
                             VariantId = variant.Id,
-
-                            // ĐÃ SỬA: Dùng Enum InventoryTransactionType
                             Type = InventoryTransactionType.EXPORT,
-
                             Quantity = -qty,
                             RefType = "Order",
                             RefId = orderId,
                             QuantityBefore = 100,
                             QuantityAfter = 100 - qty,
                             Note = $"Xuất kho bán hàng {order.OrderCode}",
-
-                            // ĐÃ SỬA: Dùng StaffId thay vì EmployeeId
                             CreatedBy = order.StaffId,
                             CreatedAt = createdAt
                         });
@@ -106,7 +105,7 @@
                 }
 
                 order.Subtotal = subtotal;
-                order.TaxAmount = subtotal * 0.08m; // VAT 8%
+                order.TaxAmount = subtotal * 0.08m;
                 order.FinalAmount = subtotal + order.TaxAmount;
 
                 orders.Add(order);
@@ -117,7 +116,38 @@
             await db.InventoryTransactions.AddRangeAsync(transactions);
             await db.SaveChangesAsync();
 
-            Console.WriteLine($"[Seeder] Orders & InventoryTransactions: OK (150 đơn trải dài 3 tháng)");
+            // ✅ FIX 2: sync CashTransaction
+            var completedOrders = orders
+                .Where(o => o.Status == OrderStatus.Completed)
+                .OrderBy(o => o.CompletedAt)
+                .ToList();
+
+            foreach (var order in completedOrders)
+            {
+                var lastBalance = await db.CashTransactions
+                    .OrderByDescending(t => t.TransactionDate)
+                    .ThenByDescending(t => t.CreatedAt)
+                    .Select(t => t.BalanceAfter)
+                    .FirstOrDefaultAsync();
+
+                db.CashTransactions.Add(new CashTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    Type = CashTransactionType.INCOME,
+                    Category = "Bán hàng",
+                    Amount = order.FinalAmount,
+                    Note = $"Thu tiền đơn {order.OrderCode}",
+                    RefType = "Order",
+                    RefId = order.Id,
+                    BalanceAfter = lastBalance + order.FinalAmount,
+                    TransactionDate = order.CompletedAt ?? order.CreatedAt,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await db.SaveChangesAsync();
+            }
+
+            Console.WriteLine($"[Seeder] Orders + Inventory + Cash: OK");
         }
     }
 }

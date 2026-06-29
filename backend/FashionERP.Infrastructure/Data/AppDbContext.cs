@@ -691,7 +691,10 @@ namespace FashionERP.Infrastructure.Data
                     if (entry.State == EntityState.Added)
                     {
                         entity.CreatedAt = now;
-                        entity.CreatedBy = userId;
+
+                        // CHỈ set nếu chưa có (để không phá seeder)
+                        if (entity.CreatedBy == null)
+                            entity.CreatedBy = userId;
                     }
                     else if (entry.State == EntityState.Modified)
                     {
