@@ -1,64 +1,100 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, message } from 'antd';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { authApi } from '../services/api';
-import type { LoginRequest } from '../services/api';
-import { useAuthStore } from '../stores/useAuthStore';
+import { Form, Input, Button, message } from 'antd'; // Đã import thêm Button từ antd
 import { useNavigate } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
 
-const LoginPage: React.FC = () => {
+export default function LoginPage() {
   const [loading, setLoading] = useState(false);
-  const setAuth = useAuthStore((state) => state.setAuth);
   const navigate = useNavigate();
 
-  const onFinish = async (values: LoginRequest) => {
+  const onFinish = async (values: any) => {
+    // In ra console để đảm bảo hàm này thực sự được gọi và không bị reload trang
+    console.log("Dữ liệu gửi đi:", values); 
     setLoading(true);
+    
     try {
-      // Kết nối tới C# backend
-      const result = await authApi.login(values);
-
-      if (result.success && result.data) {
-        message.success(result.message || 'Đăng nhập thành công!');
-
-        // Lưu token và user vào Zustand
-        const { user, accessToken, refreshToken } = result.data;
-        setAuth(user, accessToken, refreshToken);
-
-        // Chuyển hướng vào trang chính
+      // Gọi API đăng nhập từ Backend
+      const res: any = await axiosClient.post('/auth/login', values);
+      
+      console.log("Phản hồi từ Server:", res); // In ra để kiểm tra token
+      
+      if (res?.accessToken) {
+        // Lưu token vào localStorage
+        localStorage.setItem('access_token', res.accessToken);
+        localStorage.setItem('refresh_token', res.refreshToken);
+        
+        message.success('Đăng nhập thành công');
+        // Chuyển hướng về trang chủ (Dashboard)
         navigate('/');
+      } else {
+        message.error('Không nhận được Token từ server');
       }
-    } catch (error: unknown) {
-      const errorMsg =
-        error instanceof Error
-          ? error.message
-          : 'Đăng nhập thất bại. Vui lòng thử lại.'
-      message.error(errorMsg);
+    } catch (error: any) {
+      console.error("Lỗi đăng nhập:", error);
+      message.error(error?.message || 'Tài khoản hoặc mật khẩu không chính xác');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
-      <Card title="Fashion ERP SME" style={{ width: 400, textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <Form name="login" onFinish={onFinish} size="large">
-          <Form.Item name="email" rules={[{ required: true, message: 'Vui lòng nhập Email!' }, { type: 'email', message: 'Email không hợp lệ!' }]}>
-            <Input prefix={<UserOutlined />} placeholder="Email" />
+    <main className="min-h-screen flex items-center justify-center bg-neutral-50 font-sans">
+      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-sm border border-neutral-100">
+        <div className="text-center mb-10">
+          <h1 className="text-2xl font-serif font-bold tracking-widest text-neutral-900 uppercase">
+            Fashion SME
+          </h1>
+          <p className="text-sm text-neutral-500 mt-2 font-light">
+            Đăng nhập để quản lý hệ thống ERP
+          </p>
+        </div>
+
+        <Form
+          name="login_form"
+          layout="vertical"
+          onFinish={onFinish}
+          requiredMark={false}
+        >
+          <Form.Item
+            label={<span className="text-sm font-medium text-neutral-700">Email</span>}
+            name="email"
+            rules={[
+              { required: true, message: 'Vui lòng nhập email!' },
+              { type: 'email', message: 'Email không hợp lệ!' }
+            ]}
+          >
+            <Input 
+              size="large" 
+              placeholder="admin@fashionerp.vn" 
+              className="rounded-md border-neutral-300 hover:border-neutral-400 focus:border-neutral-900 focus:ring-0"
+            />
           </Form.Item>
 
-          <Form.Item name="password" rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
+          <Form.Item
+            label={<span className="text-sm font-medium text-neutral-700">Mật khẩu</span>}
+            name="password"
+            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+          >
+            <Input.Password 
+              size="large" 
+              placeholder="••••••••" 
+              className="rounded-md border-neutral-300 hover:border-neutral-400 focus:border-neutral-900 focus:ring-0"
+            />
           </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
+          <Form.Item className="mt-8 mb-0">
+            {/* ĐÃ SỬA: Sử dụng Button của Ant Design thay vì button HTML */}
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              className="w-full bg-neutral-900 text-white font-medium tracking-wider uppercase h-12 rounded-md hover:!bg-neutral-800 border-none shadow-none"
+            >
               Đăng nhập
             </Button>
           </Form.Item>
         </Form>
-      </Card>
-    </div>
+      </div>
+    </main>
   );
-};
-
-export default LoginPage;
+}

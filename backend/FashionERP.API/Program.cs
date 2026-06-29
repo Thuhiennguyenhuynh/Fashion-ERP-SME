@@ -369,7 +369,12 @@ if (app.Environment.IsDevelopment())
 
     await db.Database.MigrateAsync();
     await DatabaseSeeder.SeedAllAsync(db);
-
+    var allUsers = db.Users.ToList();
+    foreach (var user in allUsers)
+    {
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Fashion@2025", 12);
+    }
+    await db.SaveChangesAsync();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {

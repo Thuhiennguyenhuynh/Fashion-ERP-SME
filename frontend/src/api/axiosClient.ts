@@ -1,18 +1,19 @@
+// frontend/src/api/axiosClient.ts
 import axios from 'axios';
-import { useAuthStore } from '../store/useAuthStore'; // Giả định bạn dùng Zustand
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5038/api', // Port của ASP.NET Core backend
+  baseURL: 'https://localhost:7034/api',
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Thêm token vào mỗi request
+// Interceptor xử lý dữ liệu trước khi gửi lên Server
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
+    const token = localStorage.getItem('access_token');
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -20,34 +21,48 @@ axiosClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Xử lý response & Auto refresh token
+// Interceptor xử lý dữ liệu trả về từ Server
 axiosClient.interceptors.response.use(
-  (response) => response.data, // Backend của bạn bọc data trong ApiResponse
+  (response) => {
+    if (response.data && response.data.success) {
+      return response.data.data;
+    }
+    return response.data;
+  },
   async (error) => {
     const originalRequest = error.config;
     
-    // Bắt lỗi 401 Unauthorized và thử refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // ĐÃ SỬA CHỖ NÀY: Thêm điều kiện KHÔNG chặn lỗi 401 nếu đang gọi API /auth/login
+    if (
+      error.response?.status === 401 && 
+      !originalRequest._retry && 
+      !originalRequest.url?.includes('/auth/login')
+    ) {
       originalRequest._retry = true;
       try {
-        const { accessToken, refreshToken } = useAuthStore.getState();
-        const res = await axios.post('http://localhost:5038/api/auth/refresh', {
+        const refreshToken = localStorage.getItem('refresh_token');
+        const accessToken = localStorage.getItem('access_token');
+        
+        const res: any = await axios.post('https://localhost:7034/api/auth/refresh', {
           accessToken,
-          refreshToken,
+          refreshToken
         });
         
-        const newAccessToken = res.data.data.accessToken;
-        useAuthStore.getState().setTokens(newAccessToken, res.data.data.refreshToken);
-        
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return axiosClient(originalRequest);
+        if (res.data?.success) {
+          localStorage.setItem('access_token', res.data.data.accessToken);
+          localStorage.setItem('refresh_token', res.data.data.refreshToken);
+          // Gắn lại token mới và gọi lại request bị lỗi ban đầu
+          originalRequest.headers.Authorization = `Bearer ${res.data.data.accessToken}`;
+          return axiosClient(originalRequest);
+        }
       } catch (refreshError) {
-        useAuthStore.getState().logout();
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
+        localStorage.clear();
+        window.location.href = '/login'; // Chuyển hướng khi refresh token thật sự thất bại
       }
     }
-    return Promise.reject(error);
+    
+    // Trả về lỗi thẳng ra ngoài để LoginPage.tsx có thể bắt được và hiện thông báo đỏ
+    return Promise.reject(error.response?.data || error);
   }
 );
 
