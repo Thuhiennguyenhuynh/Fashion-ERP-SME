@@ -15,10 +15,12 @@ namespace FashionERP.Infrastructure.Services
     public class PurchaseOrderService : IPurchaseOrderService
     {
         private readonly AppDbContext _db;
+        private readonly ICashTransactionService _cashService;
 
-        public PurchaseOrderService(AppDbContext db)
+        public PurchaseOrderService(AppDbContext db, ICashTransactionService cashService)
         {
             _db = db;
+            _cashService = cashService;
         }
 
         public async Task<PagedResult<PurchaseOrderResponseDto>> GetAllAsync(
@@ -301,7 +303,10 @@ namespace FashionERP.Infrastructure.Services
                 if (supplier != null)
                     supplier.TotalDebt -= request.Amount;
 
-                // Note: Module Finance (CashTransaction) sẽ được gọi để insert ở đây trong tương lai
+                await _cashService.RecordAsync(
+    CashTransactionType.EXPENSE, "Thanh toán NCC", request.Amount,
+    refType: "PurchaseOrder", refId: po.Id,
+    note: $"Thanh toán PO {po.PoCode}", createdBy: paidBy);
 
                 await _db.SaveChangesAsync();
                 await tx.CommitAsync();
