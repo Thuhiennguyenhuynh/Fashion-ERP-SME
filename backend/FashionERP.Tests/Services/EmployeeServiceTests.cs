@@ -12,20 +12,27 @@ namespace FashionERP.Tests.Services
     public class EmployeeServiceTests
     {
         [Fact]
-        public async Task GetAllAsync_ReturnsListOfEmployees()
+        public async Task GetAllAsync_ReturnsPagedEmployees()
         {
             var mockService = new Mock<IEmployeeService>();
-            mockService.Setup(s => s.GetAllAsync())
-                .ReturnsAsync(new List<EmployeeResponseDto>
+            var p = new EmployeeQueryParams { Page = 1, PageSize = 10 };
+            mockService.Setup(s => s.GetAllAsync(p))
+                .ReturnsAsync(new PagedResult<EmployeeResponseDto>
                 {
-                    new() { Id = Guid.NewGuid(), FullName = "Nguyễn Văn A", Status = "Active" },
-                    new() { Id = Guid.NewGuid(), FullName = "Trần Thị B",   Status = "Probation" }
+                    Items = new List<EmployeeResponseDto>
+                    {
+                        new() { Id = Guid.NewGuid(), FullName = "Nguyễn Văn A", Status = "Active" },
+                        new() { Id = Guid.NewGuid(), FullName = "Trần Thị B",   Status = "Probation" }
+                    },
+                    TotalCount = 2,
+                    Page = 1,
+                    PageSize = 10,
                 });
 
-            var result = await mockService.Object.GetAllAsync();
-
+            var result = await mockService.Object.GetAllAsync(p);
             Assert.NotNull(result);
-            Assert.Equal(2, result.Count);
+            Assert.Equal(2, result.Items.Count);
+            Assert.Equal(2, result.TotalCount);
         }
 
         [Fact]
@@ -74,19 +81,17 @@ namespace FashionERP.Tests.Services
                 DepartmentId = Guid.NewGuid(),
                 Position = "Sales",
                 BaseSalary = 8_000_000,
-                StartDate = DateTime.Today
+                StartDate = DateTime.Today,
             };
-
             mockService.Setup(s => s.CreateAsync(request))
                 .ReturnsAsync(new EmployeeResponseDto
                 {
                     Id = Guid.NewGuid(),
                     FullName = "Lê Văn C",
-                    Status = "Probation"
+                    Status = "Probation",
                 });
 
             var result = await mockService.Object.CreateAsync(request);
-
             Assert.NotNull(result);
             Assert.Equal("Lê Văn C", result.FullName);
             Assert.Equal("Probation", result.Status);

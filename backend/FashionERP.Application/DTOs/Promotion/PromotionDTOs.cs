@@ -1,6 +1,7 @@
 ﻿namespace FashionERP.Application.DTOs.Promotion
 {
     using System;
+    using FashionERP.Application.Common;
 
     public class CreatePromotionRequestDto
     {
@@ -43,6 +44,12 @@
         public string? ErrorMessage { get; set; }
         public decimal DiscountAmount { get; set; }
         public string PromotionName { get; set; } = string.Empty;
+    }
+    public class PromotionQueryParams : PaginationParams
+    {
+        public string? Type { get; set; }        // Percent | FixedAmount
+        public bool? IsActive { get; set; }
+        public DateTime? ValidOn { get; set; }   // lọc khuyến mãi còn hiệu lực tại ngày này
     }
 }
 

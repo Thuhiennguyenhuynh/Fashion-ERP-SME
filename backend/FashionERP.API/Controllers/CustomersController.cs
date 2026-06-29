@@ -1,10 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using FashionERP.Application.DTOs.Customer;
+using FashionERP.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using FashionERP.Application.DTOs.Customer;
-using FashionERP.Application.Interfaces;
 
 namespace FashionERP.API.Controllers
 {
@@ -21,11 +19,11 @@ namespace FashionERP.API.Controllers
             _cloudinaryService = cloudinaryService;
         }
 
-        /// <summary>Danh sách khách hàng (có tìm kiếm)</summary>
+        /// <summary>Danh sách khách hàng (paged + search + filter)</summary>
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] string? keyword)
+        public async Task<IActionResult> GetAll([FromQuery] CustomerQueryParams p)
         {
-            var result = await _customerService.GetAllAsync(keyword);
+            var result = await _customerService.GetAllAsync(p);
             return Ok(result);
         }
 
@@ -34,6 +32,17 @@ namespace FashionERP.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var result = await _customerService.GetByIdAsync(id);
+            return Ok(result);
+        }
+
+        /// <summary>Danh sách đơn hàng của khách (paged)</summary>
+        [HttpGet("{id:guid}/orders")]
+        public async Task<IActionResult> GetOrders(
+            Guid id,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var result = await _customerService.GetOrdersByCustomerAsync(id, page, pageSize);
             return Ok(result);
         }
 
@@ -53,7 +62,7 @@ namespace FashionERP.API.Controllers
             return Ok(result, "Cập nhật khách hàng thành công");
         }
 
-        /// <summary>Xóa khách hàng</summary>
+        /// <summary>Xóa mềm khách hàng</summary>
         [HttpDelete("{id:guid}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(Guid id)
@@ -77,17 +86,13 @@ namespace FashionERP.API.Controllers
         {
             if (file == null || file.Length == 0)
                 return BadRequest("Vui lòng chọn file ảnh");
-
             if (file.Length > 5 * 1024 * 1024)
                 return BadRequest("Dung lượng ảnh không được vượt quá 5MB");
 
             await using var stream = file.OpenReadStream();
             var upload = await _cloudinaryService.UploadImageAsync(
                 stream, "fashion-erp/customers", $"cust_{id}");
-
-            var customer = await _customerService.GetByIdAsync(id);
             return Ok(new { avatarUrl = upload.Url }, "Upload ảnh thành công");
         }
     }
 }
-

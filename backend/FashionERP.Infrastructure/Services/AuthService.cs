@@ -165,6 +165,17 @@ namespace FashionERP.Infrastructure.Services
             user.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
+        // ─── LOGOUT ─────────────────────────────────────────────
+        public async Task LogoutAsync(Guid userId)
+        {
+            var user = await _db.Users.FindAsync(userId)
+                ?? throw new NotFoundException("Tài khoản", userId);
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiry = null;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
     }
 }
 

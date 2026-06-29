@@ -1,5 +1,6 @@
 ﻿using System;
 using FashionERP.Domain.Enums;
+using FashionERP.Application.Common;
 
 namespace FashionERP.Application.DTOs.Employee
 {
@@ -50,5 +51,14 @@ namespace FashionERP.Application.DTOs.Employee
         public string Status { get; set; } = string.Empty;
         public string? AvatarUrl { get; set; }
     }
-}
 
+    // ✅ Query Params (đặt trong cùng namespace)
+    public class EmployeeQueryParams : PaginationParams
+    {
+        public Guid? DepartmentId { get; set; }
+        public string? Status { get; set; }      // Active | Probation | Resigned
+        public string? Position { get; set; }
+        public decimal? MinSalary { get; set; }
+        public decimal? MaxSalary { get; set; }
+    }
+}

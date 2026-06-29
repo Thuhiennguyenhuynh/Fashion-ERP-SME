@@ -9,7 +9,7 @@ namespace FashionERP.Domain.Entities
     /// <summary>
     /// Khách hàng (có ảnh đại diện lưu trên Cloudinary, member level tự cập nhật theo TotalSpent)
     /// </summary>
-    public class Customer : BaseEntity
+    public class Customer : BaseEntity, ISoftDeletable   // ✅ THÊM INTERFACE
     {
         [Required(ErrorMessage = "Tên khách hàng không được để trống")]
         [StringLength(150, MinimumLength = 2,
@@ -19,42 +19,40 @@ namespace FashionERP.Domain.Entities
         [Required(ErrorMessage = "Số điện thoại không được để trống")]
         [StringLength(15)]
         [RegularExpression(ValidationConstants.PhonePattern,
-            ErrorMessage = "Số điện thoại phải là số Việt Nam hợp lệ gồm 10 số, bắt đầu bằng số 0")]
+            ErrorMessage = "Số điện thoại phải là số Việt Nam hợp lệ")]
         public string Phone { get; set; } = string.Empty;
 
         [StringLength(255)]
         [RegularExpression(ValidationConstants.EmailPattern,
-            ErrorMessage = "Email không đúng định dạng (ví dụ: ten@example.com)")]
+            ErrorMessage = "Email không đúng định dạng")]
         public string? Email { get; set; }
 
-        [EnumDataType(typeof(Gender), ErrorMessage = "Giới tính phải là Male, Female hoặc Other")]
+        [EnumDataType(typeof(Gender))]
         public Gender? Gender { get; set; }
 
         public DateTime? DateOfBirth { get; set; }
 
-        [StringLength(300, ErrorMessage = "Địa chỉ không được vượt quá 300 ký tự")]
+        [StringLength(300)]
         public string? Address { get; set; }
 
-        // ☁ Cloudinary
+        // ☁ Avatar
         [StringLength(500)]
-        [Url(ErrorMessage = "URL ảnh đại diện không hợp lệ")]
+        [Url]
         public string? AvatarUrl { get; set; }
 
         [StringLength(200)]
         public string? AvatarPublicId { get; set; }
 
-        [EnumDataType(typeof(MemberLevel),
-            ErrorMessage = "Cấp độ thành viên phải là Bronze, Silver, Gold hoặc Platinum")]
+        [EnumDataType(typeof(MemberLevel))]
         public MemberLevel MemberLevel { get; set; } = MemberLevel.Bronze;
 
-        [Range(0, double.MaxValue, ErrorMessage = "Tổng chi tiêu phải >= 0")]
         public decimal TotalSpent { get; set; } = 0;
-
-        [Range(0, int.MaxValue, ErrorMessage = "Tổng số đơn hàng phải >= 0")]
         public int TotalOrders { get; set; } = 0;
 
-        [StringLength(300, ErrorMessage = "Ghi chú không được vượt quá 300 ký tự")]
+        [StringLength(300)]
         public string? Note { get; set; }
+
+        // ✅ Soft Delete
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
 

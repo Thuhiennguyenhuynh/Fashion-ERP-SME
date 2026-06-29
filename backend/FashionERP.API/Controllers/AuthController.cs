@@ -73,6 +73,14 @@ namespace FashionERP.API.Controllers
                 Role = CurrentRole
             });
         }
+        /// <summary>Đăng xuất — revoke refresh token phía server</summary>
+        [HttpPost("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync(CurrentUserId);
+            return Ok<object>(null!, "Đăng xuất thành công");
+        }
     }
 }
 

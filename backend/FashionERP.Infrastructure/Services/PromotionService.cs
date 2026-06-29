@@ -9,6 +9,7 @@ using FashionERP.Application.Interfaces;
 using FashionERP.Domain.Entities;
 using FashionERP.Domain.Enums;
 using FashionERP.Infrastructure.Data;
+using System.Linq.Expressions;
 
 namespace FashionERP.Infrastructure.Services
 {
@@ -24,12 +25,45 @@ namespace FashionERP.Infrastructure.Services
         }
 
         // ─── GET ALL ──────────────────────────────────────────
-        public async Task<List<PromotionResponseDto>> GetAllAsync()
+        public async Task<PagedResult<PromotionResponseDto>> GetAllAsync(PromotionQueryParams p)
         {
-            var list = await _db.Promotions
-                .OrderByDescending(p => p.CreatedAt)
-                .ToListAsync();
-            return _mapper.Map<List<PromotionResponseDto>>(list);
+            var query = _db.Promotions.AsQueryable();
+
+            // Smart search: code, name
+            query = query.SmartSearch(p.Keyword,
+                pr => pr.Code,
+                pr => pr.Name);
+
+            // Filter type
+            if (!string.IsNullOrEmpty(p.Type) &&
+                Enum.TryParse<PromotionType>(p.Type, out var type))
+                query = query.Where(pr => pr.Type == type);
+
+            // Filter isActive
+            if (p.IsActive.HasValue)
+                query = query.Where(pr => pr.IsActive == p.IsActive.Value);
+
+            // Filter còn hiệu lực tại ngày chỉ định
+            if (p.ValidOn.HasValue)
+            {
+                var d = p.ValidOn.Value.Date;
+                query = query.Where(pr => pr.StartDate.Date <= d && pr.EndDate.Date >= d);
+            }
+
+            // Sort
+            var sortMap = new Dictionary<string, Expression<Func<Promotion, object>>>
+            {
+                ["code"] = pr => pr.Code,
+                ["name"] = pr => pr.Name,
+                ["startdate"] = pr => pr.StartDate,
+                ["enddate"] = pr => pr.EndDate,
+                ["usedcount"] = pr => pr.UsedCount,
+                ["createdat"] = pr => pr.CreatedAt,
+            };
+            query = query.ApplySort(p.SortBy, sortMap, "createdat");
+
+            var paged = await query.ToPagedResultAsync(p.Page, p.PageSize);
+            return paged.MapTo(_mapper.Map<List<PromotionResponseDto>>);
         }
 
         // ─── CREATE ───────────────────────────────────────────

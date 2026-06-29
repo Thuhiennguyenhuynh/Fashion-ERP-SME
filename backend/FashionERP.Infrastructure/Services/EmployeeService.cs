@@ -10,6 +10,7 @@ using FashionERP.Application.Interfaces;
 using FashionERP.Domain.Entities;
 using FashionERP.Domain.Enums;
 using FashionERP.Infrastructure.Data;
+using System.Linq.Expressions;
 
 namespace FashionERP.Infrastructure.Services
 {
@@ -28,12 +29,52 @@ namespace FashionERP.Infrastructure.Services
             _db.Employees.Include(e => e.Department);
 
         // ─── GET ALL ──────────────────────────────────────────
-        public async Task<List<EmployeeResponseDto>> GetAllAsync()
+        public async Task<PagedResult<EmployeeResponseDto>> GetAllAsync(EmployeeQueryParams p)
         {
-            var list = await BaseQuery()
-                .OrderBy(e => e.FullName)
-                .ToListAsync();
-            return _mapper.Map<List<EmployeeResponseDto>>(list);
+            var query = _db.Employees
+                .Where(e => !e.IsDeleted)
+                .Include(e => e.Department)
+                .AsQueryable();
+
+            // Smart search: tên, phone, email, chức vụ
+            query = query.SmartSearch(p.Keyword,
+                e => e.FullName,
+                e => e.Phone,
+                e => e.Email,
+                e => e.Position);
+
+            // Filter phòng ban
+            if (p.DepartmentId.HasValue)
+                query = query.Where(e => e.DepartmentId == p.DepartmentId.Value);
+
+            // Filter trạng thái
+            if (!string.IsNullOrEmpty(p.Status) &&
+                Enum.TryParse<EmployeeStatus>(p.Status, out var status))
+                query = query.Where(e => e.Status == status);
+
+            // Filter chức vụ
+            if (!string.IsNullOrEmpty(p.Position))
+                query = query.Where(e => e.Position.Contains(p.Position));
+
+            // Filter lương
+            if (p.MinSalary.HasValue)
+                query = query.Where(e => e.BaseSalary >= p.MinSalary.Value);
+            if (p.MaxSalary.HasValue)
+                query = query.Where(e => e.BaseSalary <= p.MaxSalary.Value);
+
+            // Sort
+            var sortMap = new Dictionary<string, Expression<Func<Employee, object>>>
+            {
+                ["fullname"] = e => e.FullName,
+                ["basesalary"] = e => e.BaseSalary,
+                ["startdate"] = e => e.StartDate,
+                ["status"] = e => e.Status,
+                ["createdat"] = e => e.CreatedAt,
+            };
+            query = query.ApplySort(p.SortBy, sortMap, "fullname");
+
+            var paged = await query.ToPagedResultAsync(p.Page, p.PageSize);
+            return paged.MapTo(_mapper.Map<List<EmployeeResponseDto>>);
         }
 
         // ─── GET BY ID ────────────────────────────────────────

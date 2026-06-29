@@ -21,12 +21,12 @@ namespace FashionERP.API.Controllers
             _cloudinaryService = cloudinaryService;
         }
 
-        /// <summary>Lấy danh sách toàn bộ nhân viên</summary>
+        /// <summary>Danh sách nhân viên (paged + filter + search)</summary>
         [HttpGet]
         [Authorize(Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] EmployeeQueryParams p)
         {
-            var result = await _employeeService.GetAllAsync();
+            var result = await _employeeService.GetAllAsync(p);
             return Ok(result);
         }
 
@@ -102,6 +102,9 @@ namespace FashionERP.API.Controllers
             await _employeeService.UpdateAvatarAsync(id, upload.Url, upload.PublicId);
             return Ok(new { avatarUrl = upload.Url }, "Upload ảnh đại diện thành công");
         }
+
+
     }
+
 }
 

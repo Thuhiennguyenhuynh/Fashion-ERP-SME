@@ -3,11 +3,12 @@
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using FashionERP.Application.Common;
     using FashionERP.Application.DTOs.Employee;
 
     public interface IEmployeeService
     {
-        Task<List<EmployeeResponseDto>> GetAllAsync();
+        Task<PagedResult<EmployeeResponseDto>> GetAllAsync(EmployeeQueryParams p);
         Task<EmployeeResponseDto> GetByIdAsync(Guid id);
         Task<EmployeeResponseDto> CreateAsync(CreateEmployeeRequestDto request);
         Task UpdateStatusAsync(Guid id, string status);

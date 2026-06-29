@@ -1,4 +1,5 @@
 ﻿using System;
+using FashionERP.Application.Common;
 
 namespace FashionERP.Application.DTOs.Customer
 {
@@ -48,5 +49,13 @@ namespace FashionERP.Application.DTOs.Customer
         public decimal? Chest { get; set; }
         public decimal? Waist { get; set; }
         public decimal? Hip { get; set; }
+    }
+    /// <summary>Query params cho GET /customers</summary>
+    public class CustomerQueryParams : PaginationParams
+    {
+        public string? Gender { get; set; }
+        public string? MemberLevel { get; set; }
+        public decimal? MinSpent { get; set; }
+        public decimal? MaxSpent { get; set; }
     }
 }

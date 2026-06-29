@@ -10,5 +10,7 @@ namespace FashionERP.Application.Interfaces
         Task ChangePasswordAsync(System.Guid userId, ChangePasswordRequestDto request);
         Task<UserInfoDto> CreateUserAsync(CreateUserRequestDto request);
         Task DeactivateUserAsync(System.Guid userId);
-    }
+        Task LogoutAsync(Guid userId);
+    
+}
 }

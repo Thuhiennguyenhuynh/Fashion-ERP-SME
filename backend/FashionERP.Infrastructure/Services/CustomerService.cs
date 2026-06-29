@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using FashionERP.Application.Common;
 using FashionERP.Application.DTOs.Customer;
@@ -24,42 +20,90 @@ namespace FashionERP.Infrastructure.Services
             _mapper = mapper;
         }
 
-        private IQueryable<Customer> BaseQuery() =>
-            _db.Customers.Include(c => c.Measurement);
-
-        // ─── GET ALL ──────────────────────────────────────────
-        public async Task<List<CustomerResponseDto>> GetAllAsync(string? keyword)
+        public async Task<PagedResult<CustomerResponseDto>> GetAllAsync(CustomerQueryParams p)
         {
-            var query = BaseQuery();
-            if (!string.IsNullOrEmpty(keyword))
+            var query = _db.Customers
+                .Where(c => !c.IsDeleted)
+                .Include(c => c.Measurement)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(p.Keyword))
             {
-                var kw = keyword.Trim().ToLower();
+                var kw = p.Keyword.Trim().ToLower();
                 query = query.Where(c =>
                     c.FullName.ToLower().Contains(kw) ||
                     c.Phone.Contains(kw) ||
                     (c.Email != null && c.Email.ToLower().Contains(kw)));
             }
-            var list = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
-            return _mapper.Map<List<CustomerResponseDto>>(list);
+
+            if (!string.IsNullOrEmpty(p.Gender) &&
+                Enum.TryParse<Gender>(p.Gender, out var gender))
+                query = query.Where(c => c.Gender == gender);
+
+            if (!string.IsNullOrEmpty(p.MemberLevel) &&
+                Enum.TryParse<MemberLevel>(p.MemberLevel, out var level))
+                query = query.Where(c => c.MemberLevel == level);
+
+            if (p.MinSpent.HasValue)
+                query = query.Where(c => c.TotalSpent >= p.MinSpent.Value);
+            if (p.MaxSpent.HasValue)
+                query = query.Where(c => c.TotalSpent <= p.MaxSpent.Value);
+
+            query = query.OrderByDescending(c => c.CreatedAt);
+
+            var paged = await query.ToPagedResultAsync(p.Page, p.PageSize);
+            return new PagedResult<CustomerResponseDto>
+            {
+                Items = _mapper.Map<List<CustomerResponseDto>>(paged.Items),
+                TotalCount = paged.TotalCount,
+                Page = paged.Page,
+                PageSize = paged.PageSize,
+            };
         }
 
-        // ─── GET BY ID ────────────────────────────────────────
         public async Task<CustomerResponseDto> GetByIdAsync(Guid id)
         {
-            var customer = await BaseQuery().FirstOrDefaultAsync(c => c.Id == id)
+            var customer = await _db.Customers
+                .Where(c => !c.IsDeleted)
+                .Include(c => c.Measurement)
+                .FirstOrDefaultAsync(c => c.Id == id)
                 ?? throw new NotFoundException("Khách hàng", id);
             return _mapper.Map<CustomerResponseDto>(customer);
         }
 
-        // ─── CREATE ───────────────────────────────────────────
+        public async Task<PagedResult<object>> GetOrdersByCustomerAsync(
+            Guid customerId, int page, int pageSize)
+        {
+            _ = await _db.Customers
+                .Where(c => !c.IsDeleted)
+                .FirstOrDefaultAsync(c => c.Id == customerId)
+                ?? throw new NotFoundException("Khách hàng", customerId);
+
+            var query = _db.Orders
+                .Where(o => o.CustomerId == customerId)
+                .OrderByDescending(o => o.CreatedAt)
+                .Select(o => (object)new
+                {
+                    o.Id,
+                    o.OrderCode,
+                    Status = o.Status.ToString(),
+                    o.FinalAmount,
+                    PaymentMethod = o.PaymentMethod.ToString(),
+                    o.CreatedAt,
+                    ItemCount = o.Items.Count,
+                });
+
+            return await query.ToPagedResultAsync(page, pageSize);
+        }
+
         public async Task<CustomerResponseDto> CreateAsync(CreateCustomerRequestDto request)
         {
-            if (await _db.Customers.AnyAsync(c => c.Phone == request.Phone.Trim()))
-                throw new DuplicateException($"Số điện thoại '{request.Phone}' đã được đăng ký bởi khách hàng khác");
+            if (await _db.Customers.AnyAsync(c => c.Phone == request.Phone.Trim() && !c.IsDeleted))
+                throw new DuplicateException($"Số điện thoại '{request.Phone}' đã được đăng ký");
 
             if (!string.IsNullOrEmpty(request.Email) &&
-                await _db.Customers.AnyAsync(c => c.Email == request.Email.Trim().ToLower()))
-                throw new DuplicateException($"Email '{request.Email}' đã được đăng ký bởi khách hàng khác");
+                await _db.Customers.AnyAsync(c => c.Email == request.Email.Trim().ToLower() && !c.IsDeleted))
+                throw new DuplicateException($"Email '{request.Email}' đã được đăng ký");
 
             Gender? gender = null;
             if (!string.IsNullOrEmpty(request.Gender) && Enum.TryParse<Gender>(request.Gender, out var g))
@@ -76,7 +120,7 @@ namespace FashionERP.Infrastructure.Services
                 Note = request.Note?.Trim(),
                 MemberLevel = MemberLevel.Bronze,
                 TotalSpent = 0,
-                TotalOrders = 0
+                TotalOrders = 0,
             };
 
             _db.Customers.Add(customer);
@@ -84,18 +128,22 @@ namespace FashionERP.Infrastructure.Services
             return _mapper.Map<CustomerResponseDto>(customer);
         }
 
-        // ─── UPDATE ───────────────────────────────────────────
         public async Task<CustomerResponseDto> UpdateAsync(Guid id, UpdateCustomerRequestDto request)
         {
-            var customer = await BaseQuery().FirstOrDefaultAsync(c => c.Id == id)
+            var customer = await _db.Customers
+                .Where(c => !c.IsDeleted)
+                .Include(c => c.Measurement)
+                .FirstOrDefaultAsync(c => c.Id == id)
                 ?? throw new NotFoundException("Khách hàng", id);
 
-            if (await _db.Customers.AnyAsync(c => c.Phone == request.Phone.Trim() && c.Id != id))
-                throw new DuplicateException($"Số điện thoại '{request.Phone}' đã được đăng ký bởi khách hàng khác");
+            if (await _db.Customers.AnyAsync(c => c.Phone == request.Phone.Trim()
+                    && c.Id != id && !c.IsDeleted))
+                throw new DuplicateException($"Số điện thoại '{request.Phone}' đã được đăng ký");
 
             if (!string.IsNullOrEmpty(request.Email) &&
-                await _db.Customers.AnyAsync(c => c.Email == request.Email.Trim().ToLower() && c.Id != id))
-                throw new DuplicateException($"Email '{request.Email}' đã được đăng ký bởi khách hàng khác");
+                await _db.Customers.AnyAsync(c => c.Email == request.Email.Trim().ToLower()
+                    && c.Id != id && !c.IsDeleted))
+                throw new DuplicateException($"Email '{request.Email}' đã được đăng ký");
 
             Gender? gender = null;
             if (!string.IsNullOrEmpty(request.Gender) && Enum.TryParse<Gender>(request.Gender, out var g))
@@ -114,24 +162,22 @@ namespace FashionERP.Infrastructure.Services
             return _mapper.Map<CustomerResponseDto>(customer);
         }
 
-        // ─── DELETE ───────────────────────────────────────────
         public async Task DeleteAsync(Guid id)
         {
-            var customer = await _db.Customers.FindAsync(id)
+            var customer = await _db.Customers
+                .Where(c => !c.IsDeleted)
+                .FirstOrDefaultAsync(c => c.Id == id)
                 ?? throw new NotFoundException("Khách hàng", id);
 
-            // Trả về lỗi quy trình nếu khách hàng đã có đơn hàng (Không cần dùng IsActive)
-            if (await _db.Orders.AnyAsync(o => o.CustomerId == id))
-                throw new BusinessException("Không thể xóa khách hàng đã có lịch sử đơn hàng.");
-
-            _db.Customers.Remove(customer);
+            customer.IsDeleted = true;
+            customer.DeletedAt = DateTime.UtcNow;
+            customer.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
 
-        // ─── SAVE MEASUREMENT ─────────────────────────────────
         public async Task SaveMeasurementAsync(Guid customerId, CustomerMeasurementDto dto)
         {
-            if (!await _db.Customers.AnyAsync(c => c.Id == customerId))
+            if (!await _db.Customers.AnyAsync(c => c.Id == customerId && !c.IsDeleted))
                 throw new NotFoundException("Khách hàng", customerId);
 
             var existing = await _db.CustomerMeasurements
@@ -139,7 +185,7 @@ namespace FashionERP.Infrastructure.Services
 
             if (existing == null)
             {
-                var m = new CustomerMeasurement
+                _db.CustomerMeasurements.Add(new CustomerMeasurement
                 {
                     CustomerId = customerId,
                     Height = dto.Height,
@@ -147,9 +193,8 @@ namespace FashionERP.Infrastructure.Services
                     Chest = dto.Chest,
                     Waist = dto.Waist,
                     Hip = dto.Hip,
-                    UpdatedAtMeasurement = DateTime.UtcNow
-                };
-                _db.CustomerMeasurements.Add(m);
+                    UpdatedAtMeasurement = DateTime.UtcNow,
+                });
             }
             else
             {
@@ -165,15 +210,12 @@ namespace FashionERP.Infrastructure.Services
             await _db.SaveChangesAsync();
         }
 
-        // ─── HELPER: Tự động nâng hạng member ────────────────
         public static MemberLevel CalcMemberLevel(decimal totalSpent) => totalSpent switch
         {
             >= 50_000_000 => MemberLevel.Platinum,
             >= 20_000_000 => MemberLevel.Gold,
             >= 5_000_000 => MemberLevel.Silver,
-            _ => MemberLevel.Bronze
+            _ => MemberLevel.Bronze,
         };
     }
 }
-
-

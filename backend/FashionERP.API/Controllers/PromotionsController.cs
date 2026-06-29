@@ -17,11 +17,11 @@ namespace FashionERP.API.Controllers
             _promotionService = promotionService;
         }
 
-        /// <summary>Danh sách tất cả chương trình khuyến mãi</summary>
+        /// <summary>Danh sách khuyến mãi (paged + filter)</summary>
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] PromotionQueryParams p)
         {
-            var result = await _promotionService.GetAllAsync();
+            var result = await _promotionService.GetAllAsync(p);
             return Ok(result);
         }
 
