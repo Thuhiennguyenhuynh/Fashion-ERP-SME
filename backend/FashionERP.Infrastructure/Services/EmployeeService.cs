@@ -168,19 +168,19 @@ namespace FashionERP.Infrastructure.Services
         // ─── DELETE ───────────────────────────────────────────
         public async Task DeleteAsync(Guid id)
         {
-            var emp = await _db.Employees.FindAsync(id)
+            var emp = await _db.Employees
+                .Include(e => e.Orders)
+                .FirstOrDefaultAsync(e => e.Id == id)
                 ?? throw new NotFoundException("Nhân viên", id);
 
-            if (await _db.Orders.AnyAsync(o => o.StaffId == id))
-            {
-                emp.Status = EmployeeStatus.Resigned;
-                _db.Employees.Update(emp);
-            }
-            else
-            {
-                _db.Employees.Remove(emp);
-            }
+            if (emp.Orders.Any())
+                throw new BusinessException(
+                    "Không thể xóa nhân viên đã có đơn hàng. " +
+                    "Hãy chuyển trạng thái sang Resigned thay vì xóa.");
 
+            // Gọi Remove() — SaveChangesAsync override tự convert sang soft delete
+            // vì Employee giờ implement ISoftDeletable
+            _db.Employees.Remove(emp);
             await _db.SaveChangesAsync();
         }
 

@@ -89,6 +89,7 @@ namespace FashionERP.Infrastructure.Data
 
             // Procurement
             ConfigureSuppliers(modelBuilder);
+
             ConfigurePurchaseOrders(modelBuilder);
             ConfigurePurchaseOrderItems(modelBuilder);
             ConfigureCashTransactions(modelBuilder);
@@ -120,6 +121,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Name).IsRequired().HasMaxLength(200);
                 e.Property(x => x.Phone).IsRequired().HasMaxLength(15);
+                e.Property(x => x.TotalDebt).HasColumnType("decimal(15,2)");
                 e.HasIndex(x => x.Phone).IsUnique();
             });
         }
@@ -194,6 +196,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasOne(x => x.Employee)
                     .WithOne(x => x.User)
                     .HasForeignKey<User>(x => x.EmployeeId)
+                     .IsRequired(false)
                     .OnDelete(DeleteBehavior.SetNull);
             });
         }
@@ -258,6 +261,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasOne(x => x.Employee)
                     .WithMany(emp => emp.Attendances)
                     .HasForeignKey(x => x.EmployeeId)
+                    .IsRequired(false)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
@@ -274,6 +278,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasOne(x => x.Employee)
                     .WithMany(emp => emp.Leaves)
                     .HasForeignKey(x => x.EmployeeId)
+                    .IsRequired(false)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 e.HasOne(x => x.Approver)
@@ -302,6 +307,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasOne(x => x.Employee)
                     .WithMany(emp => emp.Payrolls)
                     .HasForeignKey(x => x.EmployeeId)
+                    .IsRequired(false)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
@@ -385,6 +391,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasOne(x => x.Product)
                     .WithMany(p => p.Images)
                     .HasForeignKey(x => x.ProductId)
+                    .IsRequired(false)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
@@ -411,6 +418,7 @@ namespace FashionERP.Infrastructure.Data
                 e.HasOne(x => x.Product)
                     .WithMany(p => p.Variants)
                     .HasForeignKey(x => x.ProductId)
+                    .IsRequired(false)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

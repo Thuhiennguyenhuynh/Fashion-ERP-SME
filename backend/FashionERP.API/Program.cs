@@ -257,6 +257,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<
 // 5. AUTOMAPPER
 // ======================
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddHttpContextAccessor(); // ← thêm dòng này
 
 // ======================
 // 6. INFRASTRUCTURE

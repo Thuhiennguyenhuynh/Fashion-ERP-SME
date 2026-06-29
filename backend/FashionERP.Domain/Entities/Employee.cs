@@ -9,7 +9,7 @@ namespace FashionERP.Domain.Entities
     /// <summary>
     /// Nhân viên (có ảnh đại diện lưu trên Cloudinary)
     /// </summary>
-    public class Employee : BaseEntity
+    public class Employee : BaseEntity, ISoftDeletable
     {
         [Required(ErrorMessage = "Họ và tên không được để trống")]
         [StringLength(150, MinimumLength = 2,
