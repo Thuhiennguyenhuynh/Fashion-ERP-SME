@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Row, Col, Input, Button, Card, Select, message, Typography, Divider, Modal } from 'antd';
-import { ScanOutlined, PayCircleOutlined, CameraOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Input, Button, Card, Select, message, Typography, Divider, Modal, Tag, Space } from 'antd';
+import { ScanOutlined, PayCircleOutlined, CameraOutlined, MinusOutlined, PlusOutlined, DeleteOutlined, ClearOutlined } from '@ant-design/icons';
 import { useCartStore } from '../stores/useCartStore';
-import { orderApi, variantApi } from '../services/api';
+import { customerApi, orderApi, promotionApi, variantApi } from '../services/api';
 import type { ApiResponse } from '../services/api';
 import WebcamScanner from '../components/WebcamScanner';
 import { handleApiError } from '../utils/handleApiError';
@@ -13,10 +13,31 @@ const PosPage: React.FC = () => {
   const cart = useCartStore();
   const [barcode, setBarcode] = useState('');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [customers, setCustomers] = useState<Array<{ id: string; fullName: string; phone?: string }>>([]);
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [promotionCode, setPromotionCode] = useState(cart.promotionCode ?? '');
+  const [applyingPromotion, setApplyingPromotion] = useState(false);
 
   const subtotal = cart.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const tax = subtotal * 0.08;
   const finalAmount = subtotal + tax - cart.discountAmount;
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setCustomerLoading(true);
+      try {
+        const res = (await customerApi.getAll({ page: 1, pageSize: 50 })) as unknown as ApiResponse<any>;
+        const items = res.data?.items ?? [];
+        setCustomers(items);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setCustomerLoading(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
 
   const processBarcode = async (code: string) => {
     const cleanCode = code.trim();
@@ -59,6 +80,28 @@ const PosPage: React.FC = () => {
     processBarcode(scannedCode);
   };
 
+  const handleApplyPromotion = async () => {
+    const code = promotionCode.trim();
+    if (!code) {
+      return message.warning('Vui lòng nhập mã khuyến mãi');
+    }
+
+    setApplyingPromotion(true);
+    try {
+      const res = (await promotionApi.apply({ code, orderSubtotal: subtotal })) as unknown as ApiResponse<any>;
+      const data = res.data;
+      if (!data?.isValid) {
+        throw new Error(data?.errorMessage || 'Mã khuyến mãi không hợp lệ');
+      }
+      cart.applyPromotion(code, Number(data.discountAmount || 0));
+      message.success(`Áp dụng khuyến mãi thành công: -${Number(data.discountAmount || 0).toLocaleString()}đ`);
+    } catch (error) {
+      handleApiError(error, 'Áp dụng khuyến mãi thất bại');
+    } finally {
+      setApplyingPromotion(false);
+    }
+  };
+
   const handleCheckout = async () => {
     if (cart.items.length === 0) {
       return message.warning('Giỏ hàng đang trống!');
@@ -73,96 +116,159 @@ const PosPage: React.FC = () => {
       });
       message.success('Tạo đơn hàng thành công!');
       cart.clearCart();
+      setPromotionCode('');
     } catch (error) {
       handleApiError(error, 'Lỗi khi tạo đơn');
     }
   };
 
+  const handleQuantityChange = (variantId: string, delta: number) => {
+    const currentItem = cart.items.find((item) => item.variantId === variantId);
+    if (!currentItem) return;
+
+    const nextQuantity = Math.max(1, Math.min(currentItem.maxStock, currentItem.quantity + delta));
+    cart.updateQuantity(variantId, nextQuantity);
+  };
+
   return (
-    <div style={{ padding: '16px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Row gutter={16} style={{ flex: 1 }}>
-        <Col span={14} style={{ display: 'flex', flexDirection: 'column' }}>
-          <Card size="small" style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
+    <div className="flex h-full flex-col gap-4 p-1 md:p-2">
+      <div className="grid gap-4 xl:grid-cols-[1.4fr_0.8fr]">
+        <div className="flex flex-col gap-4">
+          <Card className="shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row">
               <Input
-                style={{ flex: 1 }}
+                className="flex-1"
                 size="large"
-                placeholder="Quét mã vạch USB hoặc nhập tay..."
+                placeholder="Quét mã vạch hoặc nhập tay..."
                 prefix={<ScanOutlined />}
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onPressEnter={handleInputEnter}
                 autoFocus
               />
-              <Button size="large" icon={<CameraOutlined />} onClick={() => setIsCameraOpen(true)}>
-                Webcam
-              </Button>
+              <Space>
+                <Button size="large" icon={<CameraOutlined />} onClick={() => setIsCameraOpen(true)}>
+                  Webcam
+                </Button>
+                <Button size="large" icon={<ClearOutlined />} onClick={() => { cart.clearCart(); setPromotionCode(''); }}>
+                  Xóa giỏ
+                </Button>
+              </Space>
             </div>
           </Card>
 
-          <Card style={{ flex: 1, overflowY: 'auto' }}>
-            <Text type="secondary">Danh sách sản phẩm (Grid View) sẽ được hiển thị ở đây...</Text>
+          <Card className="flex-1 overflow-auto border border-neutral-200 shadow-sm">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <Text strong className="text-base">Đơn hàng hiện tại</Text>
+                <div className="text-sm text-neutral-500">Quét mã vạch để thêm sản phẩm vào giỏ bán hàng</div>
+              </div>
+              <Tag color="blue">{cart.items.length} sản phẩm</Tag>
+            </div>
+
+            {cart.items.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-neutral-300 p-8 text-center text-neutral-500">
+                Chưa có sản phẩm nào trong giỏ. Hãy quét mã vạch để bắt đầu bán hàng.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {cart.items.map((item) => (
+                  <div key={item.variantId} className="rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <Text strong>{item.productName}</Text>
+                        <div className="text-xs text-neutral-500">
+                          {item.color} - {item.size}
+                        </div>
+                      </div>
+                      <Text className="font-medium text-neutral-800">{(item.unitPrice * item.quantity).toLocaleString()}đ</Text>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button size="small" icon={<MinusOutlined />} onClick={() => handleQuantityChange(item.variantId, -1)} />
+                        <span className="min-w-8 text-center text-sm font-medium">{item.quantity}</span>
+                        <Button size="small" icon={<PlusOutlined />} onClick={() => handleQuantityChange(item.variantId, 1)} />
+                      </div>
+                      <Button size="small" danger icon={<DeleteOutlined />} onClick={() => cart.removeItem(item.variantId)} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
-        </Col>
+        </div>
 
-        <Col span={10} style={{ display: 'flex', flexDirection: 'column' }}>
-          <Card title="Khách hàng & Giỏ hàng" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <Select showSearch placeholder="Tìm khách hàng theo SĐT..." style={{ width: '100%', marginBottom: '16px' }} />
-
-            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
-              {cart.items.map((item) => (
-                <div key={item.variantId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div>
-                    <Text strong>{item.productName}</Text>
-                    <br />
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      {item.color} - {item.size}
-                    </Text>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <Text>
-                      {item.quantity} x {item.unitPrice.toLocaleString()}đ
-                    </Text>
-                  </div>
-                </div>
-              ))}
+        <Card title="Thanh toán" className="shadow-sm">
+          <div className="space-y-4">
+            <div>
+              <Text strong>Khách hàng</Text>
+              <Select
+                showSearch
+                loading={customerLoading}
+                placeholder="Chọn khách hàng"
+                className="mt-2 w-full"
+                options={customers.map((customer) => ({ label: `${customer.fullName} • ${customer.phone || 'Không có SĐT'}`, value: customer.id }))}
+                value={cart.customerId ?? undefined}
+                onChange={(value) => cart.setCustomer(value ?? null)}
+              />
             </div>
 
-            <Divider />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Text>Tạm tính:</Text>
-              <Text>{subtotal.toLocaleString()}đ</Text>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Text>Giảm giá:</Text>
-              <Text type="danger">-{cart.discountAmount.toLocaleString()}đ</Text>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
-              <Title level={4}>Khách phải trả:</Title>
-              <Title level={4} type="success">{finalAmount.toLocaleString()}đ</Title>
+            <div>
+              <Text strong>Mã khuyến mãi</Text>
+              <div className="mt-2 flex gap-2">
+                <Input value={promotionCode} onChange={(e) => setPromotionCode(e.target.value)} placeholder="Nhập mã giảm giá" />
+                <Button onClick={handleApplyPromotion} loading={applyingPromotion}>Áp dụng</Button>
+              </div>
             </div>
 
-            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
-              <Button type={cart.paymentMethod === 'Cash' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Cash')}>
-                Tiền mặt
-              </Button>
-              <Button type={cart.paymentMethod === 'Transfer' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Transfer')}>
-                Chuyển khoản
-              </Button>
-              <Button type={cart.paymentMethod === 'Card' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Card')}>
-                Quẹt thẻ
-              </Button>
+            <Divider className="my-2" />
+
+            <div className="space-y-2 text-sm text-neutral-700">
+              <div className="flex items-center justify-between">
+                <Text>Tạm tính</Text>
+                <Text>{subtotal.toLocaleString()}đ</Text>
+              </div>
+              <div className="flex items-center justify-between">
+                <Text>Thuế (8%)</Text>
+                <Text>{tax.toLocaleString()}đ</Text>
+              </div>
+              <div className="flex items-center justify-between">
+                <Text>Giảm giá</Text>
+                <Text type="danger">-{cart.discountAmount.toLocaleString()}đ</Text>
+              </div>
             </div>
 
-            <Button type="primary" size="large" block icon={<PayCircleOutlined />} style={{ marginTop: '16px', height: '50px' }} onClick={handleCheckout}>
+            <div className="rounded-lg bg-neutral-50 p-3">
+              <div className="flex items-center justify-between">
+                <Title level={4} className="!mb-0">Khách phải trả</Title>
+                <Title level={4} className="!mb-0 !text-emerald-600">{finalAmount.toLocaleString()}đ</Title>
+              </div>
+            </div>
+
+            <div>
+              <Text strong>Phương thức thanh toán</Text>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type={cart.paymentMethod === 'Cash' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Cash')}>
+                  Tiền mặt
+                </Button>
+                <Button type={cart.paymentMethod === 'Transfer' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Transfer')}>
+                  Chuyển khoản
+                </Button>
+                <Button type={cart.paymentMethod === 'Card' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Card')}>
+                  Quẹt thẻ
+                </Button>
+              </div>
+            </div>
+
+            <Button type="primary" size="large" block icon={<PayCircleOutlined />} className="mt-2 h-12" onClick={handleCheckout} disabled={cart.items.length === 0}>
               THANH TOÁN LƯU ĐƠN
             </Button>
-          </Card>
-        </Col>
-      </Row>
+          </div>
+        </Card>
+      </div>
 
-      <Modal title="Quét mã vạch bằng Webcam" open={isCameraOpen} onCancel={() => setIsCameraOpen(false)} footer={null} destroyOnHidden>
+      <Modal title="Quét mã vạch bằng Webcam" open={isCameraOpen} onCancel={() => setIsCameraOpen(false)} footer={null} destroyOnClose>
         {isCameraOpen && <WebcamScanner onScanSuccess={handleCameraScanSuccess} />}
       </Modal>
     </div>

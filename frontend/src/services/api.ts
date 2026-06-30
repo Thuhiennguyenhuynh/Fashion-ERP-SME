@@ -16,7 +16,6 @@ import type {
   AxiosInstance,
   AxiosRequestConfig,
   InternalAxiosRequestConfig,
-  AxiosResponse,
 } from 'axios'
 
 // ─────────────────────────────────────────────
@@ -40,6 +39,14 @@ export interface PagedResult<T> {
   page: number
   pageSize: number
   totalPages: number
+}
+
+export interface DashboardSummary {
+  revenue: number
+  orderCount: number
+  lowStockCount: number
+  newCustomers: number
+  last7Days: { date: string; revenue: number }[]
 }
 
 // ─────────────────────────────────────────────
@@ -916,9 +923,6 @@ export interface TrendAnalysisResponse {
 // ─────────────────────────────────────────────
 
 // ── Auth ──────────────────────────────────────
-const unwrapResponse = <T>(promise: Promise<AxiosResponse<ApiResponse<T>>>) =>
-  promise.then((res) => res.data)
-
 export const authApi = {
   login: (data: LoginRequest) =>
     api.post<ApiResponse<AuthResponse>>('/api/auth/login', data),

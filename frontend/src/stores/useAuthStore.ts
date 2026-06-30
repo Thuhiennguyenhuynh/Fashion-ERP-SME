@@ -14,6 +14,19 @@ interface AuthState {
   hasRole: (...roles: string[]) => boolean;
 }
 
+const clearStoredAuth = () => {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('refresh_token')
+}
+
+const normalizeRoleKey = (value: unknown) => {
+  const role = typeof value === 'string' ? value.trim() : '';
+  return role.toLowerCase().replace(/^role_/, '');
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('token'),
@@ -44,10 +57,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    clearStoredAuth();
     set({ user: null, accessToken: null, refreshToken: null });
   },
 
-  hasRole: (...roles) => !!get().user && roles.includes(get().user!.role),
+  hasRole: (...roles) => {
+    const currentRole = get().user?.role;
+    if (!currentRole) return false;
+    return roles.some((role) => normalizeRoleKey(role) === normalizeRoleKey(currentRole));
+  },
 }));

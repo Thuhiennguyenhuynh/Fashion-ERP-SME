@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage';
 import ProductPage from './pages/ProductPage';
 import InventoryPage from './pages/InventoryPage';
 import PosPage from './pages/PosPage';
+import CustomersPage from './pages/CustomersPage';
+import ReportsPage from './pages/ReportsPage';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="products" element={<ProductPage />} />
             <Route path="inventory" element={<InventoryPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="reports" element={<ReportsPage />} />
             <Route element={<ProtectedRoute roles={['Admin', 'Manager', 'Sales']} />}>
               <Route path="pos" element={<PosPage />} />
             </Route>

@@ -10,6 +10,8 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ShopOutlined,
+  TeamOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '../stores/useAuthStore';
 
@@ -46,6 +48,8 @@ export default function MainLayout() {
             { key: '/pos', icon: <ShoppingOutlined />, label: <Link to="/pos">Bán hàng (POS)</Link> },
             { key: '/products', icon: <AppstoreOutlined />, label: <Link to="/products">Sản phẩm</Link> },
             { key: '/inventory', icon: <ShopOutlined />, label: <Link to="/inventory">Kho hàng</Link> },
+            { key: '/customers', icon: <TeamOutlined />, label: <Link to="/customers">Khách hàng</Link> },
+            { key: '/reports', icon: <BarChartOutlined />, label: <Link to="/reports">Báo cáo</Link> },
           ]}
         />
       </Sider>
