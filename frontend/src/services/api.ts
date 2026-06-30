@@ -23,8 +23,7 @@ import type {
 // 0. BASE CONFIG
 // ─────────────────────────────────────────────
 
-export const BASE_URL =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:5038'
+export const BASE_URL = import.meta.env.VITE_API_URL ?? ''
 
 /** Wrapper chung backend trả về */
 export interface ApiResponse<T = unknown> {
@@ -53,15 +52,22 @@ const api: AxiosInstance = axios.create({
 })
 
 /** Đọc token từ localStorage (Zustand authStore nên persist vào đây) */
-const getAccessToken = () => localStorage.getItem('accessToken')
-const getRefreshToken = () => localStorage.getItem('refreshToken')
+const getAccessToken = () =>
+  localStorage.getItem('accessToken') || localStorage.getItem('access_token') || localStorage.getItem('token')
+const getRefreshToken = () => localStorage.getItem('refreshToken') || localStorage.getItem('refresh_token')
 const setTokens = (access: string, refresh: string) => {
   localStorage.setItem('accessToken', access)
+  localStorage.setItem('access_token', access)
+  localStorage.setItem('token', access)
   localStorage.setItem('refreshToken', refresh)
+  localStorage.setItem('refresh_token', refresh)
 }
 const clearTokens = () => {
   localStorage.removeItem('accessToken')
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('token')
   localStorage.removeItem('refreshToken')
+  localStorage.removeItem('refresh_token')
 }
 
 // Gắn Bearer token vào mỗi request
@@ -111,8 +117,8 @@ api.interceptors.response.use(
             refreshToken: getRefreshToken(),
           },
         )
-        const { accessToken, refreshToken } = data.data
-        setTokens(accessToken, refreshToken)
+        const { accessToken, refreshToken } = normalizeAuthResponse(data.data)
+        if (accessToken) setTokens(accessToken, refreshToken ?? '')
         processQueue(null, accessToken)
         original.headers = {
           ...original.headers,
@@ -170,9 +176,27 @@ export interface UserInfo {
 }
 
 export interface AuthResponse {
-  accessToken: string
-  refreshToken: string
-  user: UserInfo
+  accessToken?: string
+  token?: string
+  access_token?: string
+  refreshToken?: string
+  refresh_token?: string
+  user?: UserInfo
+  userInfo?: UserInfo
+}
+
+export const normalizeAuthResponse = (payload: Partial<AuthResponse> | null | undefined) => {
+  const raw = (payload ?? {}) as Record<string, unknown>
+  const accessToken =
+    (raw.accessToken as string | undefined) ??
+    (raw.token as string | undefined) ??
+    (raw.access_token as string | undefined) ??
+    null
+  const refreshToken =
+    (raw.refreshToken as string | undefined) ?? (raw.refresh_token as string | undefined) ?? null
+  const user = (raw.user as UserInfo | undefined) ?? (raw.userInfo as UserInfo | undefined) ?? null
+
+  return { accessToken, refreshToken, user }
 }
 
 export interface UserListItem {
@@ -897,27 +921,25 @@ const unwrapResponse = <T>(promise: Promise<AxiosResponse<ApiResponse<T>>>) =>
 
 export const authApi = {
   login: (data: LoginRequest) =>
-    unwrapResponse(api.post<ApiResponse<AuthResponse>>('/api/auth/login', data)),
+    api.post<ApiResponse<AuthResponse>>('/api/auth/login', data),
 
   refresh: (data: RefreshTokenRequest) =>
-    unwrapResponse(api.post<ApiResponse<AuthResponse>>('/api/auth/refresh', data)),
+    api.post<ApiResponse<AuthResponse>>('/api/auth/refresh', data),
 
   logout: () =>
-    unwrapResponse(api.post<ApiResponse<null>>('/api/auth/logout')),
+    api.post<ApiResponse<null>>('/api/auth/logout'),
 
   me: () =>
-    unwrapResponse(api.get<ApiResponse<UserInfo>>('/api/auth/me')),
+    api.get<ApiResponse<UserInfo>>('/api/auth/me'),
 
   changePassword: (data: ChangePasswordRequest) =>
-    unwrapResponse(api.post<ApiResponse<null>>('/api/auth/change-password', data)),
+    api.post<ApiResponse<null>>('/api/auth/change-password', data),
 
-  /** Admin tạo tài khoản nhân viên */
   createUser: (data: CreateUserRequest) =>
-    unwrapResponse(api.post<ApiResponse<UserListItem>>('/api/auth/users', data)),
+    api.post<ApiResponse<UserListItem>>('/api/auth/users', data),
 
-  /** Admin xóa/vô hiệu hóa user */
   deactivateUser: (id: string) =>
-    unwrapResponse(api.delete<ApiResponse<null>>(`/api/auth/users/${id}`)),
+    api.delete<ApiResponse<null>>(`/api/auth/users/${id}`),
 }
 
 // ── Users (Admin) ─────────────────────────────
@@ -1267,17 +1289,17 @@ export const expenseApi = {
 
 // ── Dashboard ─────────────────────────────────
 export const dashboardApi = {
-  /** KPI tổng hợp: doanh thu, đơn hàng, tồn kho thấp, khách mới */
+  /** Lưu ý: response KHÔNG bọc ApiResponse<T>, trả thẳng object phẳng */
   getSummary: (params?: { month?: number; year?: number }) =>
-    api.get<ApiResponse<unknown>>('/api/dashboard', { params }),
+    api.get<DashboardSummary>('/api/dashboard/summary', { params }),
 
   getRevenueByMonth: (year?: number) =>
-    api.get<ApiResponse<RevenueReportItem[]>>('/api/dashboard/revenue-by-month', {
+    api.get<{ month: number; revenue: number }[]>('/api/dashboard/revenue-by-month', {
       params: { year },
     }),
 
-  getPaymentMethods: (params?: { from?: string; to?: string }) =>
-    api.get<ApiResponse<unknown>>('/api/dashboard/payment-methods', { params }),
+  getPaymentMethods: (params?: { month?: number; year?: number }) =>
+    api.get<{ method: string; count: number; total: number }[]>('/api/dashboard/payment-methods', { params }),
 }
 
 // ── Reports ─────────────────────────────────

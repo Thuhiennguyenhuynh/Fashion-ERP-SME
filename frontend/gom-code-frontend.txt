@@ -1,0 +1,2901 @@
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\App.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\App.tsx"  
+ echo.
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\App.tsx
+================================================
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+
+import MainLayout from './layouts/MainLayout';
+import DashboardPage from './pages/DashboardPage';
+import LoginPage from './pages/LoginPage';
+import ProductPage from './pages/ProductPage';
+import PosPage from './pages/PosPage';
+
+// Component này sẽ đóng vai trò làm "Bảo vệ cổng"
+// Mỗi khi URL thay đổi, nó sẽ tự động soi lại localStorage xem có token không
+const PrivateRoute = () => {
+  const isAuthenticated = !!localStorage.getItem('access_token');
+  return isAuthenticated ? <MainLayout /> : <Navigate to="/login" replace />;
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Route Công khai */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Route Nội bộ - Bọc bằng PrivateRoute */}
+        <Route path="/" element={<PrivateRoute />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="products" element={<ProductPage />} />
+          <Route path="pos" element={<PosPage />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\main.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\main.tsx"  
+ echo.
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\main.tsx
+================================================
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+  
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\App.css  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\App.css"  
+ echo.
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\App.css
+================================================
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 0;
+
+  .logo {
+    height: 18px;
+  }
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
+  }
+}
+
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\index.css  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\index.css"  
+ echo.
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\index.css
+================================================
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tùy chỉnh thanh cuộn tối giản */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\authApi.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\api\authApi.ts"  
+ echo.. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\authApi.ts
+================================================
+import axiosClient from './axiosClient';
+import { User } from '../store/useAuthStore';
+
+// Tham chiếu từ LoginRequestDto (C#)
+export interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+// Tham chiếu từ AuthResponseDto (C#)
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+}
+
+// C# bọc mọi response trong class ApiResponse<T>
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  errors?: string[];
+}
+
+export const authApi = {
+  login: (payload: LoginPayload): Promise<ApiResponse<AuthResponse>> => {
+    return axiosClient.post('/Auth/login', payload);
+  },
+  
+  logout: (): Promise<ApiResponse<any>> => {
+    return axiosClient.post('/Auth/logout');
+  },
+  
+  getMe: (): Promise<ApiResponse<any>> => {
+    return axiosClient.get('/Auth/me');
+  }
+};.
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\axiosClient.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\api\axiosClient.ts"  
+ echo.. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\axiosClient.ts
+================================================
+// frontend/src/api/axiosClient.ts
+import axios from 'axios';
+
+const axiosClient = axios.create({
+  baseURL: 'https://localhost:7034/api',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor xử lý dữ liệu trước khi gửi lên Server
+axiosClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor xử lý dữ liệu trả về từ Server
+axiosClient.interceptors.response.use(
+  (response) => {
+    if (response.data && response.data.success) {
+      return response.data.data;
+    }
+    return response.data;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // ĐÃ SỬA CHỖ NÀY: Thêm điều kiện KHÔNG chặn lỗi 401 nếu đang gọi API /auth/login
+    if (
+      error.response?.status === 401 && 
+      !originalRequest._retry && 
+      !originalRequest.url?.includes('/auth/login')
+    ) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = localStorage.getItem('refresh_token');
+        const accessToken = localStorage.getItem('access_token');
+        
+        const res: any = await axios.post('https://localhost:7034/api/auth/refresh', {
+          accessToken,
+          refreshToken
+        });
+        
+        if (res.data?.success) {
+          localStorage.setItem('access_token', res.data.data.accessToken);
+          localStorage.setItem('refresh_token', res.data.data.refreshToken);
+          // Gắn lại token mới và gọi lại request bị lỗi ban đầu
+          originalRequest.headers.Authorization = `Bearer ${res.data.data.accessToken}`;
+          return axiosClient(originalRequest);
+        }
+      } catch (refreshError) {
+        localStorage.clear();
+        window.location.href = '/login'; // Chuyển hướng khi refresh token thật sự thất bại
+      }
+    }
+    
+    // Trả về lỗi thẳng ra ngoài để LoginPage.tsx có thể bắt được và hiện thông báo đỏ
+    return Promise.reject(error.response?.data || error);
+  }
+);
+
+export default axiosClient;.
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\posApi.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\api\posApi.ts"  
+ echo.. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\posApi.ts
+================================================
+import axiosClient from './axiosClient';
+
+// Theo DTO: CreateOrderRequestDto
+export interface CreateOrderRequest {
+  customerId?: string | null;
+  paymentMethod: string;
+  promotionCode?: string | null;
+  note?: string;
+  items: { variantId: string; quantity: number }[];
+}
+
+export const posApi = {
+  // Lấy sản phẩm cho grid
+  getProducts: (params?: any) => axiosClient.get('/products', { params }),
+  
+  // Quét mã vạch gọi API GET /variants?barcode=...
+  getVariantByBarcode: (barcode: string) => axiosClient.get(`/variants`, { params: { barcode } }),
+  
+  // Validate mã khuyến mãi
+  validatePromotion: (data: { code: string; orderSubtotal: number }) => 
+    axiosClient.post('/promotions/apply', data),
+
+  // Chốt đơn hàng
+  createOrder: (data: CreateOrderRequest) => axiosClient.post('/orders', data)
+
+  // Gọi API tạo khách hàng mới
+//   createCustomer: (data: { fullName: string; phone: string }) => axiosClient.post('/customers', data),
+};.
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\productApi.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\api\productApi.ts"  
+ echo.. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\api\productApi.ts
+================================================
+// frontend/src/api/productApi.ts
+import axiosClient from './axiosClient';
+
+export interface ProductQueryParams {
+  status?: string;
+  categoryId?: string;
+  brandId?: string;
+  gender?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  keyword?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const productApi = {
+  getAll: (params: ProductQueryParams) => {
+    return axiosClient.get('/products', { params });
+  },
+  getById: (id: string) => {
+    return axiosClient.get(`/products/${id}`);
+  }
+};.
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\components\WebcamScanner.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\components\WebcamScanner.tsx"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\components\WebcamScanner.tsx
+================================================
+import React, { useEffect, useRef } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+
+interface WebcamScannerProps {
+  onScanSuccess: (barcode: string) => void;
+}
+
+const WebcamScanner: React.FC<WebcamScannerProps> = ({ onScanSuccess }) => {
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+
+  useEffect(() => {
+    scannerRef.current = new Html5QrcodeScanner(
+      "barcode-reader",
+      { fps: 10, qrbox: { width: 250, height: 100 } },
+      false
+    );
+
+    scannerRef.current.render(
+      (decodedText) => {
+        // Chỉ gọi hàm đưa data ra ngoài. 
+        // Không dùng pause() nữa vì Modal sẽ tự đóng ngay lập tức.
+        onScanSuccess(decodedText);
+      },
+      (errorMessage) => {
+        const errorStr = String(errorMessage);
+        // Bỏ qua các lỗi rác không cần thiết
+        if (errorStr.includes("NotFoundException") || errorStr.includes("Cannot pause")) {
+          return; 
+        }
+        console.warn("Lỗi quét:", errorStr);
+      }
+    );
+
+    return () => {
+      // Bọc try-catch để chặn lỗi "removeChild" khi React và thư viện cùng tranh nhau xóa DOM
+      try {
+        if (scannerRef.current) {
+          scannerRef.current.clear().catch(() => {
+            // Bỏ qua lỗi promise nội bộ của thư viện
+          });
+        }
+      } catch (error) {
+        // Âm thầm bỏ qua
+      }
+    };
+  }, [onScanSuccess]);
+
+  return (
+    <div 
+      id="barcode-reader" 
+      style={{ width: '100%', maxWidth: '400px', margin: '0 auto' }} 
+    />
+  );
+};
+
+export default WebcamScanner;echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\layouts\MainLayout.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\layouts\MainLayout.tsx"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\layouts\MainLayout.tsx
+================================================
+import React, { useState } from 'react';
+import { Layout, Menu, Dropdown, Avatar } from 'antd';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  DashboardOutlined, 
+  ShoppingOutlined, 
+  AppstoreOutlined, 
+  UserOutlined, 
+  LogoutOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined
+} from '@ant-design/icons';
+
+const { Header, Sider, Content } = Layout;
+
+export default function MainLayout() {
+  const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
+  // Mảng cấu hình cho Dropdown menu chuẩn Ant Design v5
+  const userMenuItems = [
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Đăng xuất',
+      onClick: handleLogout,
+    },
+  ];
+
+  return (
+    <Layout className="min-h-screen font-sans">
+      {/* SIDEBAR TỐI GIẢN */}
+      <Sider 
+        trigger={null} 
+        collapsible 
+        collapsed={collapsed}
+        theme="light"
+        className="border-r border-neutral-200/60 shadow-sm"
+      >
+        <div className="h-16 flex items-center justify-center font-serif text-xl font-bold tracking-widest text-neutral-800 border-b border-neutral-100">
+          {collapsed ? 'ERP' : 'FASHION SME'}
+        </div>
+        <Menu
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          className="border-r-0 pt-4"
+          items={[
+            { key: '/', icon: <DashboardOutlined />, label: <Link to="/">Tổng quan</Link> },
+            { key: '/pos', icon: <ShoppingOutlined />, label: <Link to="/pos">Bán hàng (POS)</Link> },
+            { key: '/products', icon: <AppstoreOutlined />, label: <Link to="/products">Sản phẩm</Link> },
+            { key: '/customers', icon: <UserOutlined />, label: <Link to="/customers">Khách hàng</Link> },
+          ]}
+        />
+      </Sider>
+
+      <Layout className="bg-neutral-50">
+        {/* HEADER */}
+        <Header className="bg-white px-6 flex justify-between items-center shadow-sm border-b border-neutral-200/60 h-16">
+          <button 
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-lg text-neutral-600 hover:text-neutral-900 transition-colors"
+          >
+            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          </button>
+
+          <div className="flex items-center gap-4">
+            {/* ĐÃ SỬA: Dùng thuộc tính menu={{ items: ... }} thay cho overlay */}
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <div className="cursor-pointer flex items-center gap-2 hover:bg-neutral-50 px-3 py-1 rounded-md transition-colors">
+                <Avatar icon={<UserOutlined />} className="bg-neutral-800" />
+                <span className="text-sm font-medium text-neutral-700 hidden sm:block">Quản trị viên</span>
+              </div>
+            </Dropdown>
+          </div>
+        </Header>
+
+        {/* NỘI DUNG CHÍNH (Các trang sẽ render ở đây) */}
+        <Content className="p-6 md:p-8 overflow-auto">
+          <Outlet />
+        </Content>
+      </Layout>
+    </Layout>
+  );
+}echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\DashboardPage.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\pages\DashboardPage.tsx"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\DashboardPage.tsx
+================================================
+import React, { useEffect, useState } from 'react';
+import { Card, Statistic, Row, Col } from 'antd';
+import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import axiosClient from '../api/axiosClient';
+
+export default function DashboardPage() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res: any = await axiosClient.get('/dashboard/summary');
+        setData(res);
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu dashboard", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  if (loading) return <div className="animate-pulse">Đang tải dữ liệu tổng quan...</div>;
+
+  return (
+    <main className="space-y-6">
+      <header>
+        <h1 className="text-2xl font-semibold text-neutral-800 uppercase tracking-wide">Tổng quan kinh doanh</h1>
+        <p className="text-sm text-neutral-500 mt-1">Số liệu thống kê tính đến thời điểm hiện tại.</p>
+      </header>
+
+      {/* KPI CARDS */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="shadow-sm rounded-xl">
+            <Statistic
+              title="Doanh thu tháng"
+              value={data?.revenue || 0}
+              precision={0}
+              valueStyle={{ color: '#000', fontWeight: 600 }}
+              prefix="₫"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="shadow-sm rounded-xl">
+            <Statistic
+              title="Tổng đơn hàng"
+              value={data?.orderCount || 0}
+              valueStyle={{ color: '#000', fontWeight: 600 }}
+              suffix="Đơn"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="shadow-sm rounded-xl">
+            <Statistic
+              title="Cảnh báo tồn kho"
+              value={data?.lowStockCount || 0}
+              valueStyle={{ color: '#cf1322', fontWeight: 600 }}
+              suffix="Sản phẩm"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card bordered={false} className="shadow-sm rounded-xl">
+            <Statistic
+              title="Khách hàng mới"
+              value={data?.newCustomers || 0}
+              valueStyle={{ color: '#3f8600', fontWeight: 600 }}
+              prefix={<ArrowUpOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* CHART SECTION */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-neutral-100">
+        <h3 className="text-lg font-medium text-neutral-800 mb-6">Biểu đồ doanh thu 7 ngày gần nhất</h3>
+        <div className="h-80 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data?.last7Days || []}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={(tick) => new Date(tick).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#8c8c8c', fontSize: 12 }}
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false}
+                tick={{ fill: '#8c8c8c', fontSize: 12 }}
+                tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+              />
+            <Tooltip 
+  formatter={(value: any) => [
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(value)),
+    'Doanh thu' // Đây là NameType sẽ thay thế cho dataKey="revenue"
+  ]}
+  labelFormatter={(label) => new Date(label).toLocaleDateString('vi-VN')}
+/>
+              <Line 
+                type="monotone" 
+                dataKey="revenue" 
+                stroke="#171717" 
+                strokeWidth={3}
+                dot={{ r: 4, fill: '#171717', strokeWidth: 2, stroke: '#fff' }}
+                activeDot={{ r: 6 }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </main>
+  );
+}echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\LoginPage.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\pages\LoginPage.tsx"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\LoginPage.tsx
+================================================
+import React, { useState } from 'react';
+import { Form, Input, Button, message } from 'antd'; // Đã import thêm Button từ antd
+import { useNavigate } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
+
+export default function LoginPage() {
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const onFinish = async (values: any) => {
+    // In ra console để đảm bảo hàm này thực sự được gọi và không bị reload trang
+    console.log("Dữ liệu gửi đi:", values); 
+    setLoading(true);
+    
+    try {
+      // Gọi API đăng nhập từ Backend
+      const res: any = await axiosClient.post('/auth/login', values);
+      
+      console.log("Phản hồi từ Server:", res); // In ra để kiểm tra token
+      
+      if (res?.accessToken) {
+        // Lưu token vào localStorage
+        localStorage.setItem('access_token', res.accessToken);
+        localStorage.setItem('refresh_token', res.refreshToken);
+        
+        message.success('Đăng nhập thành công');
+        // Chuyển hướng về trang chủ (Dashboard)
+        navigate('/');
+      } else {
+        message.error('Không nhận được Token từ server');
+      }
+    } catch (error: any) {
+      console.error("Lỗi đăng nhập:", error);
+      message.error(error?.message || 'Tài khoản hoặc mật khẩu không chính xác');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-neutral-50 font-sans">
+      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-sm border border-neutral-100">
+        <div className="text-center mb-10">
+          <h1 className="text-2xl font-serif font-bold tracking-widest text-neutral-900 uppercase">
+            Fashion SME
+          </h1>
+          <p className="text-sm text-neutral-500 mt-2 font-light">
+            Đăng nhập để quản lý hệ thống ERP
+          </p>
+        </div>
+
+        <Form
+          name="login_form"
+          layout="vertical"
+          onFinish={onFinish}
+          requiredMark={false}
+        >
+          <Form.Item
+            label={<span className="text-sm font-medium text-neutral-700">Email</span>}
+            name="email"
+            rules={[
+              { required: true, message: 'Vui lòng nhập email!' },
+              { type: 'email', message: 'Email không hợp lệ!' }
+            ]}
+          >
+            <Input 
+              size="large" 
+              placeholder="admin@fashionerp.vn" 
+              className="rounded-md border-neutral-300 hover:border-neutral-400 focus:border-neutral-900 focus:ring-0"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span className="text-sm font-medium text-neutral-700">Mật khẩu</span>}
+            name="password"
+            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+          >
+            <Input.Password 
+              size="large" 
+              placeholder="••••••••" 
+              className="rounded-md border-neutral-300 hover:border-neutral-400 focus:border-neutral-900 focus:ring-0"
+            />
+          </Form.Item>
+
+          <Form.Item className="mt-8 mb-0">
+            {/* ĐÃ SỬA: Sử dụng Button của Ant Design thay vì button HTML */}
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              className="w-full bg-neutral-900 text-white font-medium tracking-wider uppercase h-12 rounded-md hover:!bg-neutral-800 border-none shadow-none"
+            >
+              Đăng nhập
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
+    </main>
+  );
+}echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\PosPage.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\pages\PosPage.tsx"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\PosPage.tsx
+================================================
+import React, { useState } from 'react';
+import { Row, Col, Input, Button, Card, Select, message, Typography, Divider, Modal } from 'antd';
+import { ScanOutlined, PayCircleOutlined, CameraOutlined } from '@ant-design/icons';
+import { useCartStore } from '../stores/useCartStore';
+import { posApi } from '../api/posApi';
+import WebcamScanner from '../components/WebcamScanner';
+
+const { Title, Text } = Typography;
+
+const PosPage: React.FC = () => {
+  const cart = useCartStore();
+  
+  // State quản lý Input và Camera
+  const [barcode, setBarcode] = useState('');
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+
+  // Tính toán tiền
+  const subtotal = cart.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+  const tax = subtotal * 0.08; // VAT giả định 8%
+  const finalAmount = subtotal + tax - cart.discountAmount;
+
+  // HÀM XỬ LÝ CHUNG: Nhận barcode từ Input hoặc Camera
+  const processBarcode = async (code: string) => {
+    const cleanCode = code.trim(); 
+    if (!cleanCode) return;
+    
+    // Hiển thị loading để người dùng biết hệ thống đang xử lý
+    message.loading({ content: `Đang tìm mã: ${cleanCode}...`, key: 'scan' });
+    
+  try {
+      const res = await posApi.getVariantByBarcode(cleanCode);
+      
+      // IN RA CONSOLE ĐỂ KIỂM TRA DỮ LIỆU GỐC
+      console.log("Dữ liệu API trả về:", res);
+
+      // FIX TRIỆT ĐỂ: Quét qua tất cả các lớp vỏ có thể có của Axios
+      let variant = null;
+      if (res?.data?.data?.id) {
+        variant = res.data.data; // Nếu Axios giữ nguyên toàn bộ response
+      } else if (res?.data?.id) {
+        variant = res.data;      // Nếu Interceptor đã bóc vỏ ngoài (trả về response.data)
+      } else if (res?.id) {
+        variant = res;           // Nếu Interceptor bóc luôn vỏ API (trả về response.data.data)
+      }
+
+      // Đề phòng trường hợp Variant rỗng
+      if (!variant || !variant.id) {
+         throw new Error(`Không lấy được cấu trúc sản phẩm. Dữ liệu thực tế: ${JSON.stringify(res)}`);
+      }
+      
+      cart.addItem({
+        variantId: variant.id,
+        productId: variant.product.id,
+        productName: variant.product.name,
+        size: variant.size,
+        color: variant.color,
+        unitPrice: variant.price || 0, 
+        quantity: 1,
+        maxStock: variant.stockQuantity || 999 
+      });
+      
+      message.success({ content: `Đã thêm ${variant.product.name} vào giỏ`, key: 'scan' });
+    } catch (error: any) {
+      console.error("Lỗi chi tiết khi quét mã:", error);
+      message.error({ content: 'Không tìm thấy sản phẩm với mã vạch này!', key: 'scan' });
+    }
+  };
+
+  // Xử lý khi gõ tay / máy quét USB (bấm Enter)
+  const handleInputEnter = () => {
+    processBarcode(barcode);
+    setBarcode(''); // Reset input ngay lập tức
+  };
+
+  // Xử lý khi Webcam quét thành công
+  const handleCameraScanSuccess = (scannedCode: string) => {
+    setIsCameraOpen(false); // Đóng modal camera
+    processBarcode(scannedCode);
+  };
+
+  // Chốt đơn hàng
+  const handleCheckout = async () => {
+    if (cart.items.length === 0) {
+      return message.warning('Giỏ hàng đang trống!');
+    }
+    
+    try {
+      const payload = {
+        customerId: cart.customerId,
+        paymentMethod: cart.paymentMethod,
+        promotionCode: cart.promotionCode,
+        items: cart.items.map(i => ({ variantId: i.variantId, quantity: i.quantity }))
+      };
+      
+      await posApi.createOrder(payload);
+      message.success('Tạo đơn hàng thành công!');
+      cart.clearCart();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Lỗi khi tạo đơn');
+    }
+  };
+
+  return (
+    <div style={{ padding: '16px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Row gutter={16} style={{ flex: 1 }}>
+        
+        {/* CỘT TRÁI: Tìm kiếm & Danh sách sản phẩm */}
+        <Col span={14} style={{ display: 'flex', flexDirection: 'column' }}>
+          <Card size="small" style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Input 
+                style={{ flex: 1 }}
+                size="large"
+                placeholder="Quét mã vạch USB hoặc nhập tay..." 
+                prefix={<ScanOutlined />}
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                onPressEnter={handleInputEnter}
+                autoFocus
+              />
+              <Button 
+                size="large" 
+                icon={<CameraOutlined />} 
+                onClick={() => setIsCameraOpen(true)}
+              >
+                Webcam
+              </Button>
+            </div>
+          </Card>
+          
+          <Card style={{ flex: 1, overflowY: 'auto' }}>
+            <Text type="secondary">Danh sách sản phẩm (Grid View) sẽ được hiển thị ở đây...</Text>
+          </Card>
+        </Col>
+
+        {/* CỘT PHẢI: Giỏ hàng & Thanh toán */}
+        <Col span={10} style={{ display: 'flex', flexDirection: 'column' }}>
+          <Card title="Khách hàng & Giỏ hàng" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Select 
+              showSearch
+              placeholder="Tìm khách hàng theo SĐT..."
+              style={{ width: '100%', marginBottom: '16px' }}
+            />
+
+            <div style={{ flex: 1, overflowY: 'auto', marginBottom: '16px' }}>
+              {cart.items.map(item => (
+                <div key={item.variantId} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div>
+                    <Text strong>{item.productName}</Text><br/>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>{item.color} - {item.size}</Text>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <Text>{item.quantity} x {item.unitPrice.toLocaleString()}đ</Text>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Divider />
+
+            {/* Khối tính tiền */}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Text>Tạm tính:</Text>
+              <Text>{subtotal.toLocaleString()}đ</Text>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Text>Giảm giá:</Text>
+              <Text type="danger">-{cart.discountAmount.toLocaleString()}đ</Text>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+              <Title level={4}>Khách phải trả:</Title>
+              <Title level={4} type="success">{finalAmount.toLocaleString()}đ</Title>
+            </div>
+
+            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+              <Button type={cart.paymentMethod === 'Cash' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Cash')}>Tiền mặt</Button>
+              <Button type={cart.paymentMethod === 'Transfer' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Transfer')}>Chuyển khoản</Button>
+              <Button type={cart.paymentMethod === 'Card' ? 'primary' : 'default'} onClick={() => cart.setPaymentMethod('Card')}>Quẹt thẻ</Button>
+            </div>
+
+            <Button 
+              type="primary" 
+              size="large" 
+              block 
+              icon={<PayCircleOutlined />} 
+              style={{ marginTop: '16px', height: '50px' }}
+              onClick={handleCheckout}
+            >
+              THANH TOÁN LƯU ĐƠN
+            </Button>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* MODAL CAMERA */}
+      <Modal
+        title="Quét mã vạch bằng Webcam"
+        open={isCameraOpen}
+        onCancel={() => setIsCameraOpen(false)}
+        footer={null}
+        destroyOnHidden // Tắt camera khi đóng modal (fix warning của Ant Design)
+      >
+        {isCameraOpen && <WebcamScanner onScanSuccess={handleCameraScanSuccess} />}
+      </Modal>
+    </div>
+  );
+};
+
+export default PosPage;echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\ProductPage.tsx  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\pages\ProductPage.tsx"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\pages\ProductPage.tsx
+================================================
+import React, { useEffect, useState } from 'react';
+import { Table, Button, Input, Tag, Space, Tooltip, Avatar } from 'antd';
+import { 
+  PlusOutlined, 
+  EditOutlined, 
+  SearchOutlined, 
+  PictureOutlined 
+} from '@ant-design/icons';
+import axiosClient from '../api/axiosClient';
+
+export default function ProductPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [keyword, setKeyword] = useState('');
+
+  const fetchProducts = async (page = 1, pageSize = 10, search = '') => {
+    setLoading(true);
+    try {
+      // Gọi API lấy danh sách sản phẩm với phân trang và từ khóa
+      const res: any = await axiosClient.get('/products', {
+        params: { page, pageSize, keyword: search }
+      });
+      
+      setProducts(res.items || []);
+      setPagination({
+        current: res.page,
+        pageSize: res.pageSize,
+        total: res.totalCount
+      });
+    } catch (error) {
+      console.error("Lỗi tải danh sách sản phẩm:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const handleTableChange = (newPagination: any) => {
+    fetchProducts(newPagination.current, newPagination.pageSize, keyword);
+  };
+
+  const onSearch = (value: string) => {
+    setKeyword(value);
+    fetchProducts(1, pagination.pageSize, value);
+  };
+
+  // Cấu hình các cột cho Bảng Ant Design
+  const columns = [
+    {
+      title: 'Sản phẩm',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string, record: any) => (
+        <div className="flex items-center gap-3">
+          <Avatar 
+            shape="square" 
+            size={48} 
+            src={record.mainImageUrl} 
+            icon={<PictureOutlined />}
+            className="bg-neutral-100 border border-neutral-200 rounded-md"
+          />
+          <div>
+            <div className="font-medium text-neutral-800">{text}</div>
+            <div className="text-xs text-neutral-500 font-mono mt-0.5">{record.productCode}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Danh mục',
+      dataIndex: 'categoryName',
+      key: 'categoryName',
+      render: (text: string) => <span className="text-neutral-600">{text}</span>,
+    },
+    {
+      title: 'Giá bán cơ bản',
+      dataIndex: 'basePrice',
+      key: 'basePrice',
+      render: (price: number) => (
+        <span className="font-medium text-neutral-900">
+          {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)}
+        </span>
+      ),
+    },
+    {
+      title: 'Phân loại',
+      dataIndex: 'gender',
+      key: 'gender',
+      render: (gender: string) => {
+        const colorMap: Record<string, string> = {
+          Male: 'blue', Female: 'magenta', Unisex: 'purple', Kids: 'green'
+        };
+        return <Tag color={colorMap[gender] || 'default'}>{gender}</Tag>;
+      }
+    },
+    {
+      title: 'Biến thể',
+      key: 'variants',
+      render: (_: any, record: any) => (
+        <span className="text-sm text-neutral-600">
+          {record.variants?.length || 0} SKU
+        </span>
+      ),
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = status === 'Active' ? 'success' : status === 'Draft' ? 'warning' : 'default';
+        return <Tag color={color} className="uppercase tracking-wider text-[10px]">{status}</Tag>;
+      }
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      align: 'right' as const,
+      render: (_: any, record: any) => (
+        <Space size="middle">
+          <Tooltip title="Chỉnh sửa sản phẩm">
+            <Button 
+              type="text" 
+              icon={<EditOutlined className="text-neutral-500 hover:text-blue-600 transition-colors" />} 
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <main className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-neutral-100 font-sans min-h-full">
+      {/* Phần Header & Filter */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-neutral-800 tracking-wide uppercase">Quản lý Sản phẩm</h1>
+          <p className="text-sm text-neutral-500 mt-1 font-light">
+            Xem, thêm mới và cập nhật thông tin sản phẩm, kho hàng.
+          </p>
+        </div>
+        
+        <div className="flex gap-3 w-full sm:w-auto">
+          <Input.Search
+            placeholder="Tìm theo tên, mã SP..."
+            allowClear
+            onSearch={onSearch}
+            className="w-full sm:w-64"
+            size="large"
+          />
+          <Button 
+            type="primary" 
+            size="large" 
+            icon={<PlusOutlined />}
+            className="bg-neutral-900 text-white hover:!bg-neutral-800"
+          >
+            Thêm Mới
+          </Button>
+        </div>
+      </div>
+
+      {/* Bảng Dữ Liệu */}
+      <Table 
+        columns={columns} 
+        dataSource={products} 
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          showTotal: (total) => `Tổng cộng ${total} sản phẩm`,
+          className: "mt-6"
+        }}
+        onChange={handleTableChange}
+        className="border border-neutral-100 rounded-lg overflow-hidden"
+        rowClassName="hover:bg-neutral-50/50 transition-colors"
+      />
+    </main>
+  );
+}echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\services\api.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\services\api.ts"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\services\api.ts
+================================================
+﻿/**
+ * FashionERP – API Client
+ * Base URL: http://localhost:5038  (dev)  |  https://<render-domain>  (prod)
+ *
+ * Dùng:
+ *   import api, { authApi, productApi, ... } from './api'
+ *
+ * Tất cả response đều bọc trong ApiResponse<T>:
+ *   { success: boolean; data: T; message: string; errors?: string[] }
+ *
+ * Axios interceptor tự gắn Bearer token và tự refresh khi 401.
+ */
+
+import axios from 'axios'
+import type {
+  AxiosInstance,
+  AxiosRequestConfig,
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+} from 'axios'
+
+// ─────────────────────────────────────────────
+// 0. BASE CONFIG
+// ─────────────────────────────────────────────
+
+export const BASE_URL =
+  import.meta.env.VITE_API_URL ?? 'http://localhost:5038'
+
+/** Wrapper chung backend trả về */
+export interface ApiResponse<T = unknown> {
+  success: boolean
+  data: T
+  message: string
+  errors?: string[]
+}
+
+/** Phân trang */
+export interface PagedResult<T> {
+  items: T[]
+  totalCount: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+// ─────────────────────────────────────────────
+// 1. AXIOS INSTANCE + INTERCEPTORS
+// ─────────────────────────────────────────────
+
+const api: AxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
+})
+
+/** Đọc token từ localStorage (Zustand authStore nên persist vào đây) */
+const getAccessToken = () => localStorage.getItem('accessToken')
+const getRefreshToken = () => localStorage.getItem('refreshToken')
+const setTokens = (access: string, refresh: string) => {
+  localStorage.setItem('accessToken', access)
+  localStorage.setItem('refreshToken', refresh)
+}
+const clearTokens = () => {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+}
+
+// Gắn Bearer token vào mỗi request
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getAccessToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+// Tự refresh khi 401
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (v: string) => void
+  reject: (e: unknown) => void
+}> = []
+
+const processQueue = (error: unknown, token: string | null) => {
+  failedQueue.forEach((p) => (token ? p.resolve(token) : p.reject(error)))
+  failedQueue = []
+}
+
+api.interceptors.response.use(
+  (res) => res.data,
+  async (error) => {
+    const original = error.config as AxiosRequestConfig & {
+      _retry?: boolean
+    }
+    if (error.response?.status === 401 && !original._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then((token) => {
+          original.headers = {
+            ...original.headers,
+            Authorization: `Bearer ${token}`,
+          }
+          return api(original)
+        })
+      }
+      original._retry = true
+      isRefreshing = true
+      try {
+        const { data } = await axios.post<ApiResponse<AuthResponse>>(
+          `${BASE_URL}/api/auth/refresh`,
+          {
+            accessToken: getAccessToken(),
+            refreshToken: getRefreshToken(),
+          },
+        )
+        const { accessToken, refreshToken } = data.data
+        setTokens(accessToken, refreshToken)
+        processQueue(null, accessToken)
+        original.headers = {
+          ...original.headers,
+          Authorization: `Bearer ${accessToken}`,
+        }
+        return api(original)
+      } catch (err) {
+        processQueue(err, null)
+        clearTokens()
+        window.location.href = '/login'
+        return Promise.reject(err)
+      } finally {
+        isRefreshing = false
+      }
+    }
+    return Promise.reject(error)
+  },
+)
+
+export default api
+
+// ─────────────────────────────────────────────
+// 2. TYPES – AUTH
+// ─────────────────────────────────────────────
+
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface RefreshTokenRequest {
+  accessToken: string
+  refreshToken: string
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+  confirmNewPassword: string
+}
+
+export interface CreateUserRequest {
+  email: string
+  password: string
+  role: string          // Admin | Manager | Sales | Warehouse | Accountant
+  employeeId?: string
+}
+
+export interface UserInfo {
+  id: string
+  email: string
+  role: string
+  fullName?: string
+  avatarUrl?: string
+}
+
+export interface AuthResponse {
+  accessToken: string
+  refreshToken: string
+  user: UserInfo
+}
+
+export interface UserListItem {
+  id: string
+  email: string
+  role: string
+  employeeId?: string
+  isActive: boolean
+  lastLoginAt?: string
+}
+
+// ─────────────────────────────────────────────
+// 3. TYPES – PRODUCT
+// ─────────────────────────────────────────────
+
+export interface ProductQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  sortBy?: string
+  status?: string
+  categoryId?: string
+  brandId?: string
+  gender?: string
+  minPrice?: number
+  maxPrice?: number
+  size?: string
+  color?: string
+  inStock?: boolean
+}
+
+export interface CreateProductRequest {
+  name: string
+  description?: string
+  categoryId: string
+  brandId?: string
+  gender: string        // Male | Female | Unisex
+  basePrice: number
+  tags?: string
+  status?: string       // Draft | Active | Inactive
+}
+
+export type UpdateProductRequest = CreateProductRequest
+
+export interface ProductVariantResponse {
+  id: string
+  sku: string
+  size: string
+  color: string
+  colorHex?: string
+  price?: number
+  barcode?: string
+  imageUrl?: string
+  isActive: boolean
+  stockQuantity: number
+}
+
+export interface ProductResponse {
+  id: string
+  productCode: string
+  name: string
+  description?: string
+  categoryName: string
+  brandName?: string
+  gender: string
+  basePrice: number
+  mainImageUrl?: string
+  tags?: string
+  status: string
+  createdAt: string
+  variants: ProductVariantResponse[]
+}
+
+export interface CreateVariantRequest {
+  productId: string
+  size: string
+  color: string
+  colorHex?: string
+  price?: number
+  barcode?: string
+}
+
+// ─────────────────────────────────────────────
+// 4. TYPES – INVENTORY
+// ─────────────────────────────────────────────
+
+export interface InventoryQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  lowStockOnly?: boolean
+}
+
+export interface ImportStockRequest {
+  variantId: string
+  quantity: number
+  unitCost: number
+  note?: string
+}
+
+export interface AdjustStockRequest {
+  variantId: string
+  newQuantity: number
+  note?: string
+}
+
+export interface InventoryResponse {
+  id: string
+  variantId: string
+  productName: string
+  sku: string
+  size: string
+  color: string
+  quantity: number
+  minStock: number
+  maxStock?: number
+  location?: string
+  avgCost: number
+  lastImportDate?: string
+  isLowStock: boolean
+}
+
+export interface InventoryTransactionQueryParams {
+  page?: number
+  pageSize?: number
+  variantId?: string
+  type?: 'IMPORT' | 'EXPORT' | 'ADJUST' | 'RETURN'
+  from?: string
+  to?: string
+}
+
+// ─────────────────────────────────────────────
+// 5. TYPES – ORDER
+// ─────────────────────────────────────────────
+
+export interface OrderQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  status?: string
+  from?: string
+  to?: string
+  paymentMethod?: string
+}
+
+export interface CreateOrderItemRequest {
+  variantId: string
+  quantity: number
+}
+
+export interface CreateOrderRequest {
+  customerId?: string
+  paymentMethod: string   // Cash | Transfer | Card
+  promotionCode?: string
+  note?: string
+  items: CreateOrderItemRequest[]
+}
+
+export interface OrderItemResponse {
+  variantId: string
+  productName: string
+  size: string
+  color: string
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+export interface OrderResponse {
+  id: string
+  orderCode: string
+  customerName?: string
+  staffName: string
+  subtotal: number
+  discountAmount: number
+  taxAmount: number
+  finalAmount: number
+  paymentMethod: string
+  promotionCode?: string
+  status: string
+  note?: string
+  createdAt: string
+  completedAt?: string
+  items: OrderItemResponse[]
+}
+
+export interface CreateReturnRequest {
+  orderId: string
+  variantId: string
+  quantity: number
+  reason: string
+  returnType: string    // Refund | Exchange
+  refundAmount?: number
+}
+
+// ─────────────────────────────────────────────
+// 6. TYPES – CUSTOMER
+// ─────────────────────────────────────────────
+
+export interface CustomerQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  gender?: string
+  memberLevel?: string  // Bronze | Silver | Gold | Platinum
+  minSpent?: number
+  maxSpent?: number
+}
+
+export interface CreateCustomerRequest {
+  fullName: string
+  phone: string
+  email?: string
+  gender?: string
+  dateOfBirth?: string
+  address?: string
+  note?: string
+}
+
+export type UpdateCustomerRequest = CreateCustomerRequest
+
+export interface CustomerMeasurement {
+  height?: number
+  weight?: number
+  chest?: number
+  waist?: number
+  hip?: number
+}
+
+export interface CustomerResponse {
+  id: string
+  fullName: string
+  phone: string
+  email?: string
+  gender?: string
+  dateOfBirth?: string
+  address?: string
+  avatarUrl?: string
+  memberLevel: string
+  totalSpent: number
+  totalOrders: number
+  note?: string
+  measurement?: CustomerMeasurement
+}
+
+// ─────────────────────────────────────────────
+// 7. TYPES – EMPLOYEE / HR
+// ─────────────────────────────────────────────
+
+export interface EmployeeQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  departmentId?: string
+  status?: string       // Active | Probation | Resigned
+  position?: string
+  minSalary?: number
+  maxSalary?: number
+}
+
+export interface CreateEmployeeRequest {
+  fullName: string
+  phone: string
+  email?: string
+  gender?: string
+  dateOfBirth?: string
+  address?: string
+  departmentId: string
+  position: string
+  baseSalary: number
+  workingDaysPerMonth?: number
+  startDate: string
+}
+
+export interface UpdateEmployeeRequest extends Omit<CreateEmployeeRequest, 'startDate'> {
+  status: string
+  workingDaysPerMonth: number
+}
+
+export interface UpdateEmployeeStatusRequest {
+  status: string  // Active | Probation | Resigned
+}
+
+export interface EmployeeResponse {
+  id: string
+  fullName: string
+  phone: string
+  email?: string
+  gender?: string
+  dateOfBirth?: string
+  address?: string
+  departmentName: string
+  position: string
+  baseSalary: number
+  workingDaysPerMonth: number
+  startDate: string
+  status: string
+  avatarUrl?: string
+}
+
+export interface CheckInRequest {
+  employeeId: string
+  note?: string
+}
+
+export interface CheckOutRequest {
+  employeeId: string
+  workDate: string
+}
+
+export interface CreateAttendanceManualRequest {
+  employeeId: string
+  workDate: string
+  checkIn?: string
+  checkOut?: string
+  type?: string
+  note?: string
+}
+
+export interface AttendanceResponse {
+  id: string
+  employeeName: string
+  workDate: string
+  checkIn?: string
+  checkOut?: string
+  totalHours?: number
+  overtimeHours: number
+  type: string
+  note?: string
+}
+
+export interface CreateLeaveRequest {
+  employeeId: string
+  fromDate: string
+  toDate: string
+  reason: string
+}
+
+export interface ApproveLeaveRequest {
+  status: string   // Approved | Rejected
+  note?: string
+}
+
+export interface LeaveResponse {
+  id: string
+  employeeName: string
+  fromDate: string
+  toDate: string
+  days: number
+  reason: string
+  status: string
+  approverName?: string
+}
+
+export interface GeneratePayrollRequest {
+  employeeId: string
+  month: number
+  year: number
+  allowance?: number
+  deduction?: number
+}
+
+export interface PayrollResponse {
+  id: string
+  employeeName: string
+  month: number
+  year: number
+  workingDaysActual: number
+  baseSalary: number
+  allowance: number
+  overtimePay: number
+  deduction: number
+  netSalary: number
+  status: string  // Draft | Confirmed | Paid
+}
+
+// ─────────────────────────────────────────────
+// 8. TYPES – PROMOTION
+// ─────────────────────────────────────────────
+
+export interface PromotionQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  isActive?: boolean
+}
+
+export interface CreatePromotionRequest {
+  code: string
+  name: string
+  type: string          // Percent | FixedAmount
+  discountValue: number
+  maxDiscount?: number
+  minOrderValue?: number
+  usageLimit?: number
+  startDate: string
+  endDate: string
+}
+
+export interface PromotionResponse {
+  id: string
+  code: string
+  name: string
+  type: string
+  discountValue: number
+  maxDiscount?: number
+  minOrderValue?: number
+  usageLimit?: number
+  usedCount: number
+  startDate: string
+  endDate: string
+  isActive: boolean
+}
+
+export interface ApplyPromotionRequest {
+  code: string
+  orderSubtotal: number
+}
+
+export interface ApplyPromotionResponse {
+  isValid: boolean
+  errorMessage?: string
+  discountAmount: number
+  promotionName: string
+}
+
+// ─────────────────────────────────────────────
+// 9. TYPES – PROCUREMENT (Supplier + PO)
+// ─────────────────────────────────────────────
+
+export interface SupplierQueryParams {
+  page?: number
+  pageSize?: number
+  keyword?: string
+  isActive?: boolean
+}
+
+export interface CreateSupplierRequest {
+  name: string
+  contactPerson?: string
+  phone: string
+  email?: string
+  address?: string
+  taxCode?: string
+  bankAccount?: string
+  bankName?: string
+  note?: string
+}
+
+export interface SupplierResponse {
+  id: string
+  name: string
+  contactPerson?: string
+  phone: string
+  email?: string
+  address?: string
+  taxCode?: string
+  bankAccount?: string
+  bankName?: string
+  totalDebt: number
+  note?: string
+  isActive: boolean
+}
+
+export interface PurchaseOrderQueryParams {
+  page?: number
+  pageSize?: number
+  supplierId?: string
+  status?: string
+  from?: string
+  to?: string
+}
+
+export interface CreatePoItemRequest {
+  variantId: string
+  orderedQty: number
+  unitCost: number
+}
+
+export interface CreatePurchaseOrderRequest {
+  supplierId: string
+  expectedDate?: string
+  note?: string
+  items: CreatePoItemRequest[]
+}
+
+export interface ReceivePoItemRequest {
+  purchaseOrderItemId: string
+  receivedQtyThisTime: number
+}
+
+export interface ReceivePurchaseOrderRequest {
+  items: ReceivePoItemRequest[]
+}
+
+export interface PayPurchaseOrderRequest {
+  amount: number
+  note?: string
+}
+
+export interface PurchaseOrderItemResponse {
+  id: string
+  variantId: string
+  productName: string
+  size: string
+  color: string
+  orderedQty: number
+  receivedQty: number
+  unitCost: number
+  lineTotal: number
+}
+
+export interface PurchaseOrderResponse {
+  id: string
+  poCode: string
+  supplierId: string
+  supplierName: string
+  status: string        // Draft | Confirmed | PartialReceived | Received | Cancelled
+  totalAmount: number
+  paidAmount: number
+  debtAmount: number
+  expectedDate?: string
+  receivedDate?: string
+  note?: string
+  createdAt: string
+  createdBy?: string
+  items: PurchaseOrderItemResponse[]
+}
+
+// ─────────────────────────────────────────────
+// 10. TYPES – FINANCE
+// ─────────────────────────────────────────────
+
+export interface CashTransactionQueryParams {
+  page?: number
+  pageSize?: number
+  type?: 'INCOME' | 'EXPENSE'
+  from?: string
+  to?: string
+}
+
+export interface CreateCashTransactionRequest {
+  type: 'INCOME' | 'EXPENSE'
+  category: string
+  amount: number
+  note?: string
+  transactionDate?: string
+}
+
+export interface CashTransactionResponse {
+  id: string
+  type: string
+  category: string
+  amount: number
+  note?: string
+  refType?: string
+  refId?: string
+  balanceAfter: number
+  transactionDate: string
+  createdAt: string
+  createdBy?: string
+}
+
+export interface CashBalanceResponse {
+  currentBalance: number
+  asOf: string
+}
+
+// ─────────────────────────────────────────────
+// 11. TYPES – REPORTS / DASHBOARD
+// ─────────────────────────────────────────────
+
+export interface RevenueReportParams {
+  from: string
+  to: string
+  groupBy?: 'day' | 'week' | 'month'
+}
+
+export interface RevenueReportItem {
+  period: string
+  revenue: number
+  orderCount: number
+}
+
+export interface TopProductItem {
+  productId: string
+  productName: string
+  sku: string
+  qtySold: number
+  revenue: number
+}
+
+export interface InventoryValueItem {
+  variantId: string
+  sku: string
+  productName: string
+  size: string
+  color: string
+  quantity: number
+  avgCost: number
+  totalValue: number
+}
+
+export interface ProfitLossReport {
+  revenue: number
+  cogs: number
+  grossProfit: number
+  grossMarginPercent: number
+  profitByProduct: Array<{
+    productName: string
+    sku: string
+    qtySold: number
+    revenue: number
+    cogs: number
+    grossProfit: number
+  }>
+}
+
+export interface CashFlowReportItem {
+  period: string
+  income: number
+  expense: number
+  net: number
+}
+
+export interface ExpenseByCategoryItem {
+  category: string
+  totalAmount: number
+  count: number
+}
+
+// ─────────────────────────────────────────────
+// 12. TYPES – AI
+// ─────────────────────────────────────────────
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatbotRequest {
+  message: string
+  history?: ChatMessage[]
+}
+
+export interface SuggestedProduct {
+  productId: string
+  name: string
+  basePrice: number
+  mainImageUrl?: string
+}
+
+export interface ChatbotResponse {
+  reply: string
+  suggestedProducts?: SuggestedProduct[]
+}
+
+export interface SizeRecommendRequest {
+  productType: string   // ao | quan | vay ...
+  gender: string
+  height: number
+  weight: number
+  chest?: number
+  waist?: number
+  hip?: number
+  customerId?: string
+}
+
+export interface SizeRecommendResponse {
+  recommendedSize: string
+  confidence: number    // 0..1
+  explanation: string
+  alternatives?: Array<{ size: string; confidence: number }>
+}
+
+export interface InventoryForecastRequest {
+  variantId: string
+  horizonDays?: number  // default 30
+}
+
+export interface InventoryForecastPoint {
+  date: string
+  predictedQuantitySold: number
+}
+
+export interface InventoryForecastResponse {
+  variantId: string
+  currentStock: number
+  forecast: InventoryForecastPoint[]
+  willRunOutInDays?: number
+  needReorder: boolean
+  note?: string
+}
+
+export interface TrendAnalysisParams {
+  from: string
+  to: string
+  category?: string
+}
+
+export interface TrendAnalysisItem {
+  productName: string
+  sku: string
+  totalSold: number
+  revenue: number
+  growthRate: number
+}
+
+export interface TrendAnalysisResponse {
+  topTrends: TrendAnalysisItem[]
+  decliningItems: TrendAnalysisItem[]
+  summary: string
+}
+
+// ─────────────────────────────────────────────
+// 13. API MODULES
+// ─────────────────────────────────────────────
+
+// ── Auth ──────────────────────────────────────
+const unwrapResponse = <T>(promise: Promise<AxiosResponse<ApiResponse<T>>>) =>
+  promise.then((res) => res.data)
+
+export const authApi = {
+  login: (data: LoginRequest) =>
+    unwrapResponse(api.post<ApiResponse<AuthResponse>>('/api/auth/login', data)),
+
+  refresh: (data: RefreshTokenRequest) =>
+    unwrapResponse(api.post<ApiResponse<AuthResponse>>('/api/auth/refresh', data)),
+
+  logout: () =>
+    unwrapResponse(api.post<ApiResponse<null>>('/api/auth/logout')),
+
+  me: () =>
+    unwrapResponse(api.get<ApiResponse<UserInfo>>('/api/auth/me')),
+
+  changePassword: (data: ChangePasswordRequest) =>
+    unwrapResponse(api.post<ApiResponse<null>>('/api/auth/change-password', data)),
+
+  /** Admin tạo tài khoản nhân viên */
+  createUser: (data: CreateUserRequest) =>
+    unwrapResponse(api.post<ApiResponse<UserListItem>>('/api/auth/users', data)),
+
+  /** Admin xóa/vô hiệu hóa user */
+  deactivateUser: (id: string) =>
+    unwrapResponse(api.delete<ApiResponse<null>>(`/api/auth/users/${id}`)),
+}
+
+// ── Users (Admin) ─────────────────────────────
+export const usersApi = {
+  getAll: () =>
+    api.get<ApiResponse<UserListItem[]>>('/api/users'),
+
+  create: (data: CreateUserRequest) =>
+    api.post<ApiResponse<UserListItem>>('/api/users', data),
+
+  toggleActive: (id: string) =>
+    api.patch<ApiResponse<UserListItem>>(`/api/users/${id}/toggle-active`),
+}
+
+// ── Products ──────────────────────────────────
+export const productApi = {
+  getAll: (params?: ProductQueryParams) =>
+    api.get<ApiResponse<PagedResult<ProductResponse>>>('/api/products', { params }),
+
+  getById: (id: string) =>
+    api.get<ApiResponse<ProductResponse>>(`/api/products/${id}`),
+
+  create: (data: CreateProductRequest) =>
+    api.post<ApiResponse<ProductResponse>>('/api/products', data),
+
+  update: (id: string, data: UpdateProductRequest) =>
+    api.put<ApiResponse<ProductResponse>>(`/api/products/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<ApiResponse<null>>(`/api/products/${id}`),
+
+  /** Upload ảnh chính qua multipart (FE nên dùng Cloudinary widget thay thế) */
+  uploadMainImage: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post<ApiResponse<null>>(`/api/products/${id}/main-image`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
+  addVariant: (productId: string, data: Omit<CreateVariantRequest, 'productId'>) =>
+    api.post<ApiResponse<ProductVariantResponse>>(`/api/products/${productId}/variants`, {
+      ...data,
+      productId,
+    }),
+
+  updateVariant: (variantId: string, data: Partial<CreateVariantRequest>) =>
+    api.put<ApiResponse<ProductVariantResponse>>(`/api/products/variants/${variantId}`, data),
+
+  deleteVariant: (variantId: string) =>
+    api.delete<ApiResponse<null>>(`/api/products/variants/${variantId}`),
+}
+
+// ── Variants (POS barcode lookup) ─────────────
+export const variantApi = {
+  getByBarcode: (barcode: string) =>
+    api.get<ApiResponse<ProductVariantResponse & { product: Pick<ProductResponse, 'id' | 'name' | 'mainImageUrl'> }>>(
+      '/api/variants',
+      { params: { barcode } },
+    ),
+}
+
+// ── Categories ──────────────────────────────────
+export const categoryApi = {
+  getAll: () =>
+    api.get<ApiResponse<Array<{ id: string; name: string; description?: string; productCount: number }>>>('/api/categories'),
+
+  create: (data: { name: string; description?: string }) =>
+    api.post('/api/categories', data),
+
+  update: (id: string, data: { name: string; description?: string }) =>
+    api.put(`/api/categories/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/api/categories/${id}`),
+}
+
+// ── Brands ────────────────────────────────────
+export const brandApi = {
+  getAll: () =>
+    api.get<ApiResponse<Array<{ id: string; name: string; logoUrl?: string }>>>('/api/brands'),
+
+  create: (data: { name: string; description?: string }) =>
+    api.post('/api/brands', data),
+
+  uploadLogo: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/api/brands/${id}/logo`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+
+  delete: (id: string) =>
+    api.delete(`/api/brands/${id}`),
+}
+
+// ── Inventory ─────────────────────────────────
+export const inventoryApi = {
+  getAll: (params?: InventoryQueryParams) =>
+    api.get<ApiResponse<PagedResult<InventoryResponse>>>('/api/inventory', { params }),
+
+  getByVariant: (variantId: string) =>
+    api.get<ApiResponse<InventoryResponse>>(`/api/inventory/variant/${variantId}`),
+
+  import: (data: ImportStockRequest) =>
+    api.post<ApiResponse<null>>('/api/inventory/import', data),
+
+  adjust: (data: AdjustStockRequest) =>
+    api.post<ApiResponse<null>>('/api/inventory/adjust', data),
+
+  getTransactions: (params?: InventoryTransactionQueryParams) =>
+    api.get<ApiResponse<PagedResult<unknown>>>('/api/inventory/transactions', { params }),
+
+  getTransactionsByVariant: (variantId: string, params?: { page?: number; pageSize?: number }) =>
+    api.get<ApiResponse<PagedResult<unknown>>>(`/api/inventory/transactions/${variantId}`, { params }),
+}
+
+// ── Orders ──────────────────────────────────
+export const orderApi = {
+  getAll: (params?: OrderQueryParams) =>
+    api.get<ApiResponse<PagedResult<OrderResponse>>>('/api/orders', { params }),
+
+  getById: (id: string) =>
+    api.get<ApiResponse<OrderResponse>>(`/api/orders/${id}`),
+
+  create: (data: CreateOrderRequest) =>
+    api.post<ApiResponse<OrderResponse>>('/api/orders', data),
+
+  complete: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/orders/${id}/complete`),
+
+  cancel: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/orders/${id}/cancel`),
+
+  createReturn: (data: CreateReturnRequest) =>
+    api.post<ApiResponse<null>>(`/api/orders/${data.orderId}/return`, data),
+}
+
+// ── Customers ─────────────────────────────────
+export const customerApi = {
+  getAll: (params?: CustomerQueryParams) =>
+    api.get<ApiResponse<PagedResult<CustomerResponse>>>('/api/customers', { params }),
+
+  getById: (id: string) =>
+    api.get<ApiResponse<CustomerResponse>>(`/api/customers/${id}`),
+
+  getOrders: (id: string, params?: { page?: number; pageSize?: number }) =>
+    api.get<ApiResponse<PagedResult<OrderResponse>>>(`/api/customers/${id}/orders`, { params }),
+
+  create: (data: CreateCustomerRequest) =>
+    api.post<ApiResponse<CustomerResponse>>('/api/customers', data),
+
+  update: (id: string, data: UpdateCustomerRequest) =>
+    api.put<ApiResponse<CustomerResponse>>(`/api/customers/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<ApiResponse<null>>(`/api/customers/${id}`),
+
+  saveMeasurement: (id: string, data: CustomerMeasurement) =>
+    api.post<ApiResponse<null>>(`/api/customers/${id}/measurements`, data),
+
+  uploadAvatar: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/api/customers/${id}/avatar`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+}
+
+// ── Employees ─────────────────────────────────
+export const employeeApi = {
+  getAll: (params?: EmployeeQueryParams) =>
+    api.get<ApiResponse<PagedResult<EmployeeResponse>>>('/api/employees', { params }),
+
+  getById: (id: string) =>
+    api.get<ApiResponse<EmployeeResponse>>(`/api/employees/${id}`),
+
+  create: (data: CreateEmployeeRequest) =>
+    api.post<ApiResponse<EmployeeResponse>>('/api/employees', data),
+
+  update: (id: string, data: UpdateEmployeeRequest) =>
+    api.put<ApiResponse<EmployeeResponse>>(`/api/employees/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<ApiResponse<null>>(`/api/employees/${id}`),
+
+  updateStatus: (id: string, data: UpdateEmployeeStatusRequest) =>
+    api.patch<ApiResponse<null>>(`/api/employees/${id}/status`, data),
+
+  uploadAvatar: (id: string, file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/api/employees/${id}/avatar`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+}
+
+// ── Departments ───────────────────────────────
+export const departmentApi = {
+  getAll: () =>
+    api.get<ApiResponse<Array<{ id: string; name: string; description?: string }>>>('/api/departments'),
+
+  create: (data: { name: string; description?: string }) =>
+    api.post('/api/departments', data),
+
+  update: (id: string, data: { name: string; description?: string }) =>
+    api.put(`/api/departments/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/api/departments/${id}`),
+}
+
+// ── Attendance ────────────────────────────────
+export const attendanceApi = {
+  checkIn: (data: CheckInRequest) =>
+    api.post<ApiResponse<AttendanceResponse>>('/api/attendances/check-in', data),
+
+  checkOut: (data: CheckOutRequest) =>
+    api.post<ApiResponse<AttendanceResponse>>('/api/attendances/check-out', data),
+
+  createManual: (data: CreateAttendanceManualRequest) =>
+    api.post<ApiResponse<AttendanceResponse>>('/api/attendances/manual', data),
+
+  getByEmployee: (employeeId: string, params?: { from?: string; to?: string }) =>
+    api.get<ApiResponse<AttendanceResponse[]>>(`/api/attendances/employee/${employeeId}`, { params }),
+}
+
+// ── Leaves ────────────────────────────────
+export const leaveApi = {
+  create: (data: CreateLeaveRequest) =>
+    api.post<ApiResponse<LeaveResponse>>('/api/leaves', data),
+
+  approve: (id: string, data: ApproveLeaveRequest) =>
+    api.patch<ApiResponse<LeaveResponse>>(`/api/leaves/${id}/approve`, data),
+
+  getByEmployee: (employeeId: string) =>
+    api.get<ApiResponse<LeaveResponse[]>>(`/api/leaves/employee/${employeeId}`),
+
+  getPending: () =>
+    api.get<ApiResponse<LeaveResponse[]>>('/api/leaves/pending'),
+}
+
+// ── Payrolls ────────────────────────────────
+export const payrollApi = {
+  getByMonthYear: (month: number, year: number) =>
+    api.get<ApiResponse<PayrollResponse[]>>('/api/payrolls', { params: { month, year } }),
+
+  generate: (data: GeneratePayrollRequest) =>
+    api.post<ApiResponse<PayrollResponse>>('/api/payrolls/generate', data),
+
+  confirm: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/payrolls/${id}/confirm`),
+
+  markPaid: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/payrolls/${id}/mark-paid`),
+
+  getByEmployee: (employeeId: string, year: number, month: number) =>
+    api.get<ApiResponse<PayrollResponse>>(`/api/payrolls/${employeeId}/${year}/${month}`),
+}
+
+// ── Promotions ────────────────────────────────
+export const promotionApi = {
+  getAll: (params?: PromotionQueryParams) =>
+    api.get<ApiResponse<PagedResult<PromotionResponse>>>('/api/promotions', { params }),
+
+  create: (data: CreatePromotionRequest) =>
+    api.post<ApiResponse<PromotionResponse>>('/api/promotions', data),
+
+  deactivate: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/promotions/${id}/deactivate`),
+
+  apply: (data: ApplyPromotionRequest) =>
+    api.post<ApiResponse<ApplyPromotionResponse>>('/api/promotions/apply', data),
+}
+
+// ── Suppliers ─────────────────────────────────
+export const supplierApi = {
+  getAll: (params?: SupplierQueryParams) =>
+    api.get<ApiResponse<PagedResult<SupplierResponse>>>('/api/suppliers', { params }),
+
+  getById: (id: string) =>
+    api.get<ApiResponse<SupplierResponse>>(`/api/suppliers/${id}`),
+
+  create: (data: CreateSupplierRequest) =>
+    api.post<ApiResponse<SupplierResponse>>('/api/suppliers', data),
+
+  update: (id: string, data: CreateSupplierRequest) =>
+    api.put<ApiResponse<SupplierResponse>>(`/api/suppliers/${id}`, data),
+
+  toggleActive: (id: string) =>
+    api.patch<ApiResponse<SupplierResponse>>(`/api/suppliers/${id}/toggle-active`),
+}
+
+// ── Purchase Orders ───────────────────────────
+export const purchaseOrderApi = {
+  getAll: (params?: PurchaseOrderQueryParams) =>
+    api.get<ApiResponse<PagedResult<PurchaseOrderResponse>>>('/api/purchaseorders', { params }),
+
+  getById: (id: string) =>
+    api.get<ApiResponse<PurchaseOrderResponse>>(`/api/purchaseorders/${id}`),
+
+  create: (data: CreatePurchaseOrderRequest) =>
+    api.post<ApiResponse<PurchaseOrderResponse>>('/api/purchaseorders', data),
+
+  confirm: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/purchaseorders/${id}/confirm`),
+
+  receive: (id: string, data: ReceivePurchaseOrderRequest) =>
+    api.post<ApiResponse<PurchaseOrderResponse>>(`/api/purchaseorders/${id}/receive`, data),
+
+  pay: (id: string, data: PayPurchaseOrderRequest) =>
+    api.post<ApiResponse<null>>(`/api/purchaseorders/${id}/payments`, data),
+
+  cancel: (id: string) =>
+    api.patch<ApiResponse<null>>(`/api/purchaseorders/${id}/cancel`),
+}
+
+// ── Cash Transactions ─────────────────────────
+export const cashApi = {
+  getAll: (params?: CashTransactionQueryParams) =>
+    api.get<ApiResponse<PagedResult<CashTransactionResponse>>>('/api/cashtransactions', { params }),
+
+  getBalance: () =>
+    api.get<ApiResponse<CashBalanceResponse>>('/api/cashtransactions/balance'),
+
+  create: (data: CreateCashTransactionRequest) =>
+    api.post<ApiResponse<CashTransactionResponse>>('/api/cashtransactions', data),
+}
+
+// ── Expenses ─────────────────────────────────
+export const expenseApi = {
+  getAll: (params?: { page?: number; pageSize?: number; from?: string; to?: string; category?: string }) =>
+    api.get<ApiResponse<PagedResult<unknown>>>('/api/expenses', { params }),
+
+  create: (data: { category: string; amount: number; description?: string; expenseDate?: string }) =>
+    api.post('/api/expenses', data),
+
+  update: (id: string, data: unknown) =>
+    api.put(`/api/expenses/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete(`/api/expenses/${id}`),
+}
+
+// ── Dashboard ─────────────────────────────────
+export const dashboardApi = {
+  /** KPI tổng hợp: doanh thu, đơn hàng, tồn kho thấp, khách mới */
+  getSummary: (params?: { month?: number; year?: number }) =>
+    api.get<ApiResponse<unknown>>('/api/dashboard', { params }),
+
+  getRevenueByMonth: (year?: number) =>
+    api.get<ApiResponse<RevenueReportItem[]>>('/api/dashboard/revenue-by-month', {
+      params: { year },
+    }),
+
+  getPaymentMethods: (params?: { from?: string; to?: string }) =>
+    api.get<ApiResponse<unknown>>('/api/dashboard/payment-methods', { params }),
+}
+
+// ── Reports ─────────────────────────────────
+export const reportApi = {
+  getRevenue: (params: RevenueReportParams) =>
+    api.get<ApiResponse<RevenueReportItem[]>>('/api/reports/revenue', { params }),
+
+  getTopProducts: (params: { from: string; to: string; top?: number }) =>
+    api.get<ApiResponse<TopProductItem[]>>('/api/reports/top-products', { params }),
+
+  getInventoryValue: () =>
+    api.get<ApiResponse<InventoryValueItem[]>>('/api/reports/inventory-value'),
+
+  /** Xuất CSV cho Power BI: reportType = revenue | top-products | inventory-value */
+  exportCsv: (reportType: string, from: string, to: string) =>
+    api.get('/api/reports/export', {
+      params: { reportType, from, to },
+      responseType: 'blob',
+    }),
+
+  getProfitLoss: (from: string, to: string) =>
+    api.get<ApiResponse<ProfitLossReport>>('/api/reports/profit-loss', {
+      params: { from, to },
+    }),
+
+  getCashFlow: (params: { from: string; to: string; groupBy?: 'day' | 'week' | 'month' }) =>
+    api.get<ApiResponse<CashFlowReportItem[]>>('/api/reports/cash-flow', { params }),
+
+  getExpensesByCategory: (from: string, to: string) =>
+    api.get<ApiResponse<ExpenseByCategoryItem[]>>('/api/reports/expenses-by-category', {
+      params: { from, to },
+    }),
+}
+
+// ── AI ────────────────────────────────────────
+export const aiApi = {
+  chat: (data: ChatbotRequest) =>
+    api.post<ApiResponse<ChatbotResponse>>('/api/ai/chatbot', data),
+
+  recommendSize: (data: SizeRecommendRequest) =>
+    api.post<ApiResponse<SizeRecommendResponse>>('/api/ai/size-recommend', data),
+
+  forecastInventory: (data: InventoryForecastRequest) =>
+    api.post<ApiResponse<InventoryForecastResponse>>('/api/ai/inventory-forecast', data),
+
+  getTrendAnalysis: (params: TrendAnalysisParams) =>
+    api.get<ApiResponse<TrendAnalysisResponse>>('/api/ai/trend-analysis', { params }),
+}
+
+// ─────────────────────────────────────────────
+// 14. HELPERS
+// ─────────────────────────────────────────────
+
+/** Lấy data từ response hoặc throw message lỗi */
+export function unwrap<T>(res: { data: ApiResponse<T> }): T {
+  if (!res.data.success) throw new Error(res.data.message)
+  return res.data.data
+}
+
+/** Download blob từ reportApi.exportCsv */
+export function downloadBlob(blobRes: { data: Blob }, filename: string) {
+  const url = URL.createObjectURL(blobRes.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/**
+ * ROLES có trong hệ thống
+ * Dùng để check quyền trong component: if (user.role === ROLES.Admin) ...
+ */
+export const ROLES = {
+  Admin: 'Admin',
+  Manager: 'Manager',
+  Sales: 'Sales',
+  Warehouse: 'Warehouse',
+  Accountant: 'Accountant',
+} as const
+
+export type Role = (typeof ROLES)[keyof typeof ROLES]
+
+/**
+ * MEMBER LEVELS
+ */
+export const MEMBER_LEVELS = ['Bronze', 'Silver', 'Gold', 'Platinum'] as const
+export type MemberLevel = (typeof MEMBER_LEVELS)[number]
+echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\stores\authStore.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\stores\authStore.ts"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\stores\authStore.ts
+================================================
+import { create } from 'zustand';
+import api from '../services/api';
+
+interface User {
+  id: string;
+  email: string;
+  role: string;
+  fullName?: string;
+  avatarUrl?: string;
+}
+
+interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  success: boolean;
+  data?: {
+    accessToken: string;
+    user: User;
+  };
+  message?: string;
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  user: User | null;
+  isLoading: boolean;
+  login: (payload: LoginPayload) => Promise<void>;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  isAuthenticated: !!localStorage.getItem('accessToken'),
+  user: null,
+  isLoading: false,
+
+  login: async (payload) => {
+    set({ isLoading: true });
+    try {
+      // Gọi API login đến C# Backend
+      const response = await api.post<LoginResponse>('/auth/login', payload);
+      const data = response as unknown as LoginResponse;
+
+      if (data.success && data.data) {
+        const { accessToken, user } = data.data;
+        localStorage.setItem('accessToken', accessToken);
+        set({ isAuthenticated: true, user, isLoading: false });
+        return;
+      }
+
+      set({ isLoading: false });
+      throw new Error(data.message || 'Đăng nhập thất bại');
+    } catch (error: unknown) {
+      set({ isLoading: false });
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Đăng nhập thất bại';
+      throw new Error(errorMessage, { cause: error });
+    }
+  },
+
+  logout: () => {
+    localStorage.removeItem('accessToken');
+    set({ isAuthenticated: false, user: null });
+  },
+}));echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\stores\useAuthStore.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\stores\useAuthStore.ts"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\stores\useAuthStore.ts
+================================================
+import { create } from 'zustand';
+
+export interface User {
+  id: string;
+  email: string;
+  role: string;
+  fullName?: string;
+  avatarUrl?: string;
+}
+
+interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null, // Sẽ được fetch lại khi app load
+  accessToken: localStorage.getItem('accessToken'),
+  refreshToken: localStorage.getItem('refreshToken'),
+  
+  setAuth: (user, accessToken, refreshToken) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    set({ user, accessToken, refreshToken });
+  },
+  
+  logout: () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    set({ user: null, accessToken: null, refreshToken: null });
+  },
+}));echo ..
+
+C:\CSharp\ERP_mini_SME\frontend>(
+echo ================================================  
+ echo FILE: C:\CSharp\ERP_mini_SME\frontend\src\stores\useCartStore.ts  
+ echo ================================================  
+ type "C:\CSharp\ERP_mini_SME\frontend\src\stores\useCartStore.ts"  
+ echo.echo .. 
+) 
+================================================
+FILE: C:\CSharp\ERP_mini_SME\frontend\src\stores\useCartStore.ts
+================================================
+import { create } from 'zustand';
+
+// Interface bám sát DTO OrderItemResponseDto và Variant của Backend
+export interface CartItem {
+  variantId: string;
+  productId: string;
+  productName: string;
+  size: string;
+  color: string;
+  unitPrice: number;
+  quantity: number;
+  maxStock: number; // Để validate không cho mua quá tồn kho
+}
+
+interface CartState {
+  items: CartItem[];
+  customerId: string | null;
+  promotionCode: string | null;
+  discountAmount: number;
+  paymentMethod: 'Cash' | 'Transfer' | 'Card';
+  
+  // Actions
+  addItem: (item: CartItem) => void;
+  updateQuantity: (variantId: string, quantity: number) => void;
+  removeItem: (variantId: string) => void;
+  setCustomer: (id: string | null) => void;
+  applyPromotion: (code: string, discount: number) => void;
+  setPaymentMethod: (method: 'Cash' | 'Transfer' | 'Card') => void;
+  clearCart: () => void;
+}
+
+export const useCartStore = create<CartState>((set) => ({
+  items: [],
+  customerId: null,
+  promotionCode: null,
+  discountAmount: 0,
+  paymentMethod: 'Cash', // Mặc định theo Backend DTO
+
+  addItem: (newItem) => set((state) => {
+    const existingItem = state.items.find(i => i.variantId === newItem.variantId);
+    if (existingItem) {
+      return {
+        items: state.items.map(i => 
+          i.variantId === newItem.variantId 
+            ? { ...i, quantity: Math.min(i.quantity + newItem.quantity, i.maxStock) } 
+            : i
+        )
+      };
+    }
+    return { items: [...state.items, newItem] };
+  }),
+
+  updateQuantity: (variantId, quantity) => set((state) => ({
+    items: state.items.map(i => i.variantId === variantId ? { ...i, quantity } : i)
+  })),
+
+  removeItem: (variantId) => set((state) => ({
+    items: state.items.filter(i => i.variantId !== variantId)
+  })),
+
+  setCustomer: (id) => set({ customerId: id }),
+  applyPromotion: (code, discount) => set({ promotionCode: code, discountAmount: discount }),
+  setPaymentMethod: (method) => set({ paymentMethod: method }),
+  clearCart: () => set({ items: [], customerId: null, promotionCode: null, discountAmount: 0, paymentMethod: 'Cash' })
+}));echo ..
