@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import DashboardPage from './pages/DashboardPage';
-import LoginPage from './pages/LoginPage';
-import ProductPage from './pages/ProductPage';
+import DashboardPage from './pages/Dashboard/DashboardPage';
+import LoginPage from './pages/Auth/LoginPage';
+import ProductList from './pages/Products/ProductList';
 import InventoryPage from './pages/InventoryPage';
-import PosPage from './pages/PosPage';
+import POSPage from './pages/POS/POSPage';
 import CustomersPage from './pages/CustomersPage';
-import ReportsPage from './pages/ReportsPage';
+import ReportsPage from './pages/Reports/ReportsPage';
 
 function App() {
   return (
@@ -18,12 +18,12 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<MainLayout />}>
             <Route index element={<DashboardPage />} />
-            <Route path="products" element={<ProductPage />} />
+            <Route path="products" element={<ProductList />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="customers" element={<CustomersPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route element={<ProtectedRoute roles={['Admin', 'Manager', 'Sales']} />}>
-              <Route path="pos" element={<PosPage />} />
+              <Route path="pos" element={<POSPage />} />
             </Route>
           </Route>
         </Route>
